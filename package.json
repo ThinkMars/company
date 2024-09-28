@@ -1,0 +1,22 @@
+{
+  "name": "@company/company-monorepo",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^18.0.0 || >=20.0.0"
+  },
+  "packageManager": "pnpm@9.11.0",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ThinkMars/company"
+  },
+  "keywords": [
+    "frontend",
+    "enterprise",
+    "web"
+  ],
+  "author": "https://github.com/ThinkMars",
+  "license": "MIT"
+}

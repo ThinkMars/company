@@ -1,0 +1,16 @@
+{
+  "name": "@company/web-metrics",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "track web metrics",
+  "main": "index.js",
+  "scripts": {
+  },
+  "keywords": [
+    "web",
+    "metrics",
+    "performance"
+  ],
+  "author": "https://github.com/ThinkMars",
+  "license": "MIT"
+}
