@@ -7,6 +7,7 @@
   },
   "packageManager": "pnpm@9.11.0",
   "scripts": {
+    "preinstall": "npx only-allow pnpm"
   },
   "repository": {
     "type": "git",
@@ -18,5 +19,29 @@
     "web"
   ],
   "author": "https://github.com/ThinkMars",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "eslint": "^9.11.1",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "simple-git-hooks": "^2.11.1",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.1"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": [
+      "prettier --write --cache --ignore-unknown"
+    ],
+    "packages/*/{src,types}/**/*.ts": [
+      "eslint --cache --fix"
+    ],
+    "packages/**/*.d.ts": [
+      "eslint --cache --fix"
+    ]
+  }
 }

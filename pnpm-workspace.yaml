@@ -4,6 +4,8 @@ packages:
   # all packages in subdirs of components/
   - 'components/**'
   # all packages that are inside test directories
-  - - 'packages/**/__tests__/**'
+  - 'packages/**/__tests__/**'
   # docs
-  - docs
+  - 'docs'
+  # server for need
+  - 'server'
