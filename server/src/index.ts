@@ -14,8 +14,8 @@ app.use(koaStatic("."));
 app.use(render);
 app.use(
   cors({
-    allowMethods: "GET,HEAD,PUT,POST,DELETE,PATCH"
-  })
+    allowMethods: "GET,HEAD,PUT,POST,DELETE,PATCH",
+  }),
 );
 
 router.post("/api/reportUrl", async (ctx) => {

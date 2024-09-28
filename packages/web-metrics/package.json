@@ -4,13 +4,19 @@
   "type": "module",
   "description": "track web metrics",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [
     "web",
     "metrics",
     "performance"
   ],
   "author": "https://github.com/ThinkMars",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "deepmerge": "^4.3.1",
+    "error-stack-parser": "^2.1.4",
+    "mobile-detect": "^1.4.5",
+    "object-to-formdata": "^4.5.1",
+    "safe-stringify": "^1.1.1"
+  }
 }

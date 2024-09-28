@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "dev": "bun ./index.ts"
+    "serve": "bun ./src/index.ts"
   },
   "author": "https://github.com/ThinkMars",
   "license": "MIT",
