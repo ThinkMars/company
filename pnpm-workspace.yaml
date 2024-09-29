@@ -7,5 +7,5 @@ packages:
   - 'packages/**/__tests__/**'
   # docs
   - 'docs'
-  # server for need
-  - 'server'
+  # server for back-end
+  - 'nest-server'
