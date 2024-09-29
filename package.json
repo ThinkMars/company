@@ -9,7 +9,8 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "simple-git-hooks",
-    "start:server": "pnpm --filter @company/nest-server run start"
+    "start:server": "pnpm --filter @company/nest-server run start",
+    "start:client": "pnpm --filter @company/example run dev"
   },
   "repository": {
     "type": "git",
