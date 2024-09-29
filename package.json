@@ -10,7 +10,8 @@
     "preinstall": "npx only-allow pnpm",
     "postinstall": "simple-git-hooks",
     "start:server": "pnpm --filter @company/nest-server run start",
-    "start:client": "pnpm --filter @company/example run dev"
+    "start:client": "pnpm --filter @company/example run dev",
+    "build": "pnpm -r --filter='./packages/*' run build"
   },
   "repository": {
     "type": "git",
