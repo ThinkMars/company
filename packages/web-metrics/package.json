@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "description": "track web metrics",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {},
   "keywords": [
     "web",
@@ -15,8 +15,11 @@
   "dependencies": {
     "deepmerge": "^4.3.1",
     "error-stack-parser": "^2.1.4",
-    "mobile-detect": "^1.4.5",
     "object-to-formdata": "^4.5.1",
-    "safe-stringify": "^1.1.1"
+    "safe-stringify": "^1.1.1",
+    "ua-parser-js": "^1.0.39"
+  },
+  "devDependencies": {
+    "@types/ua-parser-js": "^0.7.39"
   }
 }
