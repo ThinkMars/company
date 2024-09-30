@@ -1,6 +1,4 @@
-import { getDeviceInfo } from './device'
 import { track } from './track'
-import { getNetworkType, getLocaleLanguage, getPageUrl } from './utils'
 import {
   spaPlugin,
   errorPlugin,
@@ -9,16 +7,20 @@ import {
 } from './plugins/index'
 
 interface MonitorConfig {
+  projectId: string
+  serverUrl?: string
   userId?: string | number
-  whiteURLList: string[]
+  whiteURLList?: string[]
+  debug?: boolean
 }
 
 export interface Monitor {
   track: typeof track
-  config: MonitorConfig
+  config: Omit<MonitorConfig, 'whiteURLList'> &
+    Required<Pick<MonitorConfig, 'whiteURLList'>>
 }
 
-export let monitorInstance: Monitor | null = null
+export let monitorInstance: Monitor
 
 function initPlugins(ctx: Monitor) {
   ;[spaPlugin, errorPlugin, performancePlugin, requestPlugin].forEach(
@@ -34,20 +36,11 @@ export function createMonitor(config: MonitorConfig) {
     return monitorInstance
   }
 
-  const { userId, whiteURLList = [] } = config
-
-  const deviceInfo = getDeviceInfo()
-  const networkType = getNetworkType()
-  const localeLanguage = getLocaleLanguage()
-  const pageUrl = getPageUrl()
+  const { whiteURLList = [], ...resConfig } = config || {}
 
   const initConfig = {
-    deviceInfo,
-    networkType,
-    localeLanguage,
-    pageUrl,
-    userId,
     whiteURLList,
+    ...resConfig,
   }
 
   monitorInstance = Object.freeze({

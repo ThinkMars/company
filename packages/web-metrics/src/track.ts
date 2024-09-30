@@ -1,6 +1,13 @@
 import { MetricsType } from './constants'
 import { report } from './report'
 import { monitorInstance } from './monitor'
+import { getDeviceInfo } from './device'
+import {
+  getLocaleLanguage,
+  getNetworkType,
+  getPageUrl,
+  generateUniqueId,
+} from './utils'
 import deepMerge from 'deepmerge'
 
 export interface TrackOptions {
@@ -12,15 +19,25 @@ export interface TrackOptions {
 export function track(options: TrackOptions) {
   const { data, ...otherOptions } = options
 
-  if (!data) {
-    console.warn('track data is empty')
-    return
+  const { projectId, userId } = monitorInstance.config
+
+  const deviceInfo = getDeviceInfo()
+  const networkType = getNetworkType()
+  const localeLanguage = getLocaleLanguage()
+  const pageUrl = getPageUrl()
+  const baseConfig = {
+    networkType,
+    localeLanguage,
+    pageUrl,
+    ...deviceInfo,
   }
 
-  const initData = monitorInstance!.config
-
-  const metricsData = deepMerge(initData, data || {})
-  const reportData = { ...initData, ...otherOptions, metricsData }
+  const metricsData = deepMerge(
+    { projectId, userId: userId || generateUniqueId() },
+    baseConfig,
+    data || {},
+  )
+  const reportData = { ...otherOptions, ...metricsData }
 
   report(reportData)
 }

@@ -1,4 +1,4 @@
-import { MetricsType } from '../constants'
+import { MetricsType, PerformanceDataType } from '../constants'
 import { track, type TrackOptions } from '../track'
 
 const handlePerformanceEntry = (entryList: PerformanceEntryList) => {
@@ -7,22 +7,39 @@ const handlePerformanceEntry = (entryList: PerformanceEntryList) => {
     eventType: MetricsType.Performance,
   }
 
-  const performanceData: any = {}
-
-  for (const entry of entryList) {
-    if (entry.name === 'first-paint') {
-      // 单位ms
-      performanceData.FP = entry.startTime
-    } else if (entry.name === 'first-contentful-paint') {
-      performanceData.FCP = entry.startTime
-    } else if (entry.name === 'largest-contentful-paint') {
-      performanceData.LCP = entry.startTime
-    }
+  const commonTrack = (data: object) => {
+    track({
+      ...reportData,
+      data,
+    })
   }
 
-  reportData.data = performanceData
+  for (const entry of entryList) {
+    switch (entry.name) {
+      case PerformanceDataType.FirstPaint:
+        commonTrack({ FP: entry.startTime })
+        break
+      case PerformanceDataType.FirstContentfulPaint:
+        commonTrack({ FCP: entry.startTime })
+        break
+      default:
+        break
+    }
 
-  track(reportData)
+    switch (entry.entryType) {
+      case PerformanceDataType.LargestContentfulPaint:
+        commonTrack({ LCP: entry.startTime })
+        break
+      case PerformanceDataType.LongTask:
+        commonTrack({ LongTask: entry.startTime })
+        break
+      case PerformanceDataType.Resource:
+        // too many resources loaded
+        break
+      default:
+        break
+    }
+  }
 }
 
 export function performancePlugin() {
@@ -30,14 +47,25 @@ export function performancePlugin() {
     const observer = new PerformanceObserver((list) => {
       handlePerformanceEntry(list.getEntries())
     })
+
     observer.observe({
-      entryTypes: [
-        'first-paint',
-        'first-contentful-paint',
-        'largest-contentful-paint',
-      ],
+      type: 'paint',
+      buffered: true,
+    })
+    observer.observe({
+      type: 'largest-contentful-paint',
+      buffered: true,
+    })
+    observer.observe({
+      type: 'longtask',
+      buffered: true,
+    })
+    // check GET request
+    observer.observe({
+      type: 'resource',
+      buffered: true,
     })
   } else {
-    handlePerformanceEntry(window.performance.getEntries())
+    // handlePerformanceEntry(window.performance.getEntries())
   }
 }

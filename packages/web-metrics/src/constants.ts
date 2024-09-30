@@ -8,4 +8,14 @@ export enum MetricsType {
   Custom = 'custom',
 }
 
-export const REPORT_URL = 'https://api.metrics.cn/report'
+export enum PerformanceDataType {
+  FirstPaint = 'first-paint',
+  FirstContentfulPaint = 'first-contentful-paint',
+  LargestContentfulPaint = 'largest-contentful-paint',
+  LongTask = 'longtask',
+  TimeToInteractive = 'time-to-interactive',
+  TimeBlockingTime = 'total-blocking-time',
+  Resource = 'resource',
+}
+
+// export const REPORT_URL = 'https://api.metrics.cn/report'

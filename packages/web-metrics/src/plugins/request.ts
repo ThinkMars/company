@@ -16,7 +16,7 @@ export function requestPlugin(ctx: Monitor) {
     this.addEventListener('load', function () {
       if (!whiteURLList.includes(this.responseURL)) {
         track({
-          eventName: MetricsType.HttpRequest,
+          eventName: 'xhr',
           eventType: MetricsType.HttpRequest,
           data: {
             url: this.responseURL,
@@ -40,7 +40,7 @@ export function requestPlugin(ctx: Monitor) {
 
       if (!whiteURLList.includes(response.url)) {
         track({
-          eventName: MetricsType.HttpRequest,
+          eventName: 'fetch',
           eventType: MetricsType.HttpRequest,
           data: {
             url: response.url,
