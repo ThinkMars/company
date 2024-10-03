@@ -11,7 +11,8 @@
     "postinstall": "simple-git-hooks",
     "start:server": "pnpm --filter @company/nest-server run start",
     "start:client": "pnpm --filter @company/example run dev",
-    "build": "pnpm -r --filter='./packages/*' run build"
+    "build": "pnpm -r --filter='./packages/*' run build",
+    "test": "vitest"
   },
   "repository": {
     "type": "git",

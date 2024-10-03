@@ -2,7 +2,7 @@
 
 ## introduction
 
-collect web data and make metrics.
+track web data and make metrics.
 
 ## install
 
@@ -18,13 +18,14 @@ collect web data and make metrics.
 import { createMonitor, MetricsType } from '@company/web-metrics'
 
 const monitor = createMonitor({
+  projectId: 'my-project', // your project id
   serverUrl: 'http://localhost:3000/api/track', // your server url
   userId: '123456', // your unique user id
 })
 
+// define my own track event
 monitor.track({
   eventName: 'your_event_name',
-  eventType: MetricsType.Custom,
   data: {
     button: 'submit',
   },
@@ -38,7 +39,7 @@ monitor.track({
 ```js
 interface Monitor {
   config: MonitorConfig;
-  track(eventName: string, eventType: MetricsType, data?: object);
+  track(eventName: string, eventType?: MetricsType, data?: object);
 }
 
 createMonitor(config: MonitorConfig): Monitor;
@@ -47,7 +48,7 @@ createMonitor(config: MonitorConfig): Monitor;
 ### track
 
 ```typescript
-track(eventName: string, eventType: MetricsType, data?: object);
+track(eventName: string, eventType?: MetricsType, data?: object);
 ```
 
 ## MonitorConfig
