@@ -11,13 +11,13 @@ import {
 import deepMerge from 'deepmerge'
 
 export interface TrackOptions {
-  eventType: MetricsType
   eventName: string
+  eventType?: MetricsType
   data?: object
 }
 
 export function track(options: TrackOptions) {
-  const { data, ...otherOptions } = options
+  const { data, eventType = MetricsType.Custom, ...otherOptions } = options
 
   const { projectId, userId } = monitorInstance.config
 
@@ -37,7 +37,8 @@ export function track(options: TrackOptions) {
     baseConfig,
     data || {},
   )
-  const reportData = { ...otherOptions, ...metricsData }
+
+  const reportData = Object.assign({}, { eventType }, otherOptions, metricsData)
 
   report(reportData)
 }
