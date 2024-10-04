@@ -10,4 +10,4 @@ packages:
   # server for back-end
   - 'nest-server'
   # client for front-end
-  - example
+  - playground
