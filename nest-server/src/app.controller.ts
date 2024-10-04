@@ -9,4 +9,9 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello()
   }
+  @Get('test')
+  test(): string {
+    console.log('测试非同源下是否已经发出请求到服务器')
+    return 'test'
+  }
 }

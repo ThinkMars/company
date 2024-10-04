@@ -9,7 +9,7 @@ function handleFetch() {
 }
 
 function handleXHR() {
-  axios.get('http://localhost:3000/')
+  axios.get('http://localhost:3000/test')
 }
 </script>
 
