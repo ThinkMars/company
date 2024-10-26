@@ -1,7 +1,8 @@
 import errorStackParser from 'error-stack-parser'
 import stringify from 'safe-stringify'
 import { MetricsType } from '../constants'
-import { track, type TrackOptions } from '../track'
+import { track } from '../track'
+import { TrackOptions } from '../types'
 
 export function errorPlugin() {
   const oldOnError = window.onerror

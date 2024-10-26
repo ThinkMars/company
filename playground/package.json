@@ -1,5 +1,5 @@
 {
-  "name": "@company/example",
+  "name": "@company/playground",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -11,7 +11,8 @@
   "dependencies": {
     "@company/web-metrics": "workspace:^",
     "axios": "^1.7.7",
-    "vue": "^3.4.37"
+    "vue": "^3.4.37",
+    "vue-router": "^4.4.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.2",

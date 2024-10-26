@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
-console.log('AppModule: ', AppModule)
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -11,5 +10,7 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
   })
   await app.listen(3000)
+
+  console.log('start server at http://localhost:3000')
 }
 bootstrap()

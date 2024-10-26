@@ -1,4 +1,4 @@
-import { MetricsType } from '../constants'
+import { HistoryType, MetricsType } from '../constants'
 import { track } from '../track'
 
 export function spaPlugin() {
@@ -8,9 +8,8 @@ export function spaPlugin() {
     if (typeof func === 'function') {
       window.history[fnName] = function (...args) {
         track({
-          eventType: MetricsType.Performance,
-          eventName: 'pageChange',
-          data: {},
+          eventType: MetricsType.RouterChange,
+          eventName: HistoryType[fnName],
         })
 
         return func.apply(this, args)
@@ -19,23 +18,15 @@ export function spaPlugin() {
   }
 
   hackState('pushState')
-  hackState('replaceState')
+  // hackState('replaceState')
 
-  window.addEventListener('hashchange', () => {
+  window.addEventListener('popstate', () => {
     track({
-      eventType: MetricsType.Performance,
-      eventName: 'pageChange',
-      data: {},
-    })
-  })
-
-  window.addEventListener('historystatechanged', () => {
-    track({
-      eventType: MetricsType.Performance,
-      eventName: 'pageChange',
-      data: {},
+      eventType: MetricsType.RouterChange,
+      eventName: HistoryType.popstate,
     })
   })
 
   // TODO: 检测路由变化后的性能？
+  // TODO: 监听路由
 }
