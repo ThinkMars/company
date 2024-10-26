@@ -1,6 +1,6 @@
 import { MetricsType } from './constants'
 import { report } from './report'
-import { monitorInstance } from './monitor'
+import ctxConfig from './config'
 import { getDeviceInfo } from './device'
 import {
   getLocaleLanguage,
@@ -10,16 +10,14 @@ import {
 } from './utils'
 import deepMerge from 'deepmerge'
 
-export interface TrackOptions {
-  eventName: string
-  eventType?: MetricsType
-  data?: object
-}
+import { TrackOptions } from './types'
 
-export function track(options: TrackOptions) {
+export function track(options: { eventName: string; data?: any }): void
+export function track(options: TrackOptions): void
+export function track(options: TrackOptions): void {
   const { data, eventType = MetricsType.Custom, ...otherOptions } = options
 
-  const { projectId, userId } = monitorInstance.config
+  const { projectId, userId } = ctxConfig.get()
 
   const deviceInfo = getDeviceInfo()
   const networkType = getNetworkType()

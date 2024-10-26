@@ -1,5 +1,6 @@
 import { MetricsType, PerformanceDataType } from '../constants'
-import { track, type TrackOptions } from '../track'
+import { track } from '../track'
+import { TrackOptions } from '../types'
 
 const handlePerformanceEntry = (entryList: PerformanceEntryList) => {
   const reportData: TrackOptions = {

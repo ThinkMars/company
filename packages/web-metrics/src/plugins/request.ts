@@ -1,6 +1,6 @@
 import { MetricsType } from '../constants'
-import { Monitor } from '../monitor'
 import { track } from '../track'
+import { Monitor } from '../types'
 
 export function requestPlugin(ctx: Monitor) {
   const whiteURLList = ctx.config.whiteURLList

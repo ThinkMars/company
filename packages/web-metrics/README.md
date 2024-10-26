@@ -66,6 +66,9 @@ interface MonitorConfig {
   // Whether to enable debug mode. Default is false.
   // In debug mode, the data will be printed to the console instead of being sent to the server.
   debug?: boolean
+  // Whether to use image to send data. Default is false.
+  // If set to false, the data will be sent first use navigator.sendBeacon
+  useImg?: boolean
 }
 ```
 

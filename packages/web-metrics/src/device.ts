@@ -1,21 +1,8 @@
 import { UAParser } from 'ua-parser-js'
-
-export interface IDeviceInfo {
-  browser: string
-  mobile?: string
-  isPhone: boolean
-  userAgent: string
-  os: string
-  cpu: string
-  engine: string
-  screenW: number
-  screenH: number
-  dpr: number
-}
+import { IDeviceInfo } from './types'
 
 export function getDeviceInfo(): IDeviceInfo {
   const parser = new UAParser()
-  // console.log(parser.getResult())
 
   const { browser, cpu, device, os, engine, ua } = parser.getResult()
 

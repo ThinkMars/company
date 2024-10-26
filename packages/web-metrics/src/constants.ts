@@ -5,7 +5,16 @@ export enum MetricsType {
   UnHandleRejectionError = 'unHandleRejectionError',
   ResourceError = 'resourceError',
   HttpRequest = 'httpRequest',
+  RouterChange = 'routerChange',
   Custom = 'custom',
+}
+
+export const HistoryType = {
+  pushState: 'push',
+  replaceState: 'replace',
+  popstate: 'back',
+  stateChange: 'stateChange',
+  hashChange: 'hashChange',
 }
 
 export enum PerformanceDataType {
@@ -17,5 +26,3 @@ export enum PerformanceDataType {
   TimeBlockingTime = 'total-blocking-time',
   Resource = 'resource',
 }
-
-// export const REPORT_URL = 'https://api.metrics.cn/report'
