@@ -15,6 +15,7 @@
     "server": "pnpm --filter @company/nest-server run start:dev",
     "client": "pnpm --filter @company/playground run dev",
     "build": "pnpm -r --filter='./packages/*' run build",
+    "chatgpt": "pnpm -r --filter @company/chatgpt run dev",
     "test": "vitest"
   },
   "repository": {
