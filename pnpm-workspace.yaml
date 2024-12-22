@@ -5,8 +5,6 @@ packages:
   - 'components/**'
   # all packages that are inside test directories
   - 'packages/**/__tests__/**'
-  # docs
-  - 'docs'
   # server for back-end
   - 'nest-server'
   # client for front-end
