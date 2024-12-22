@@ -1,7 +1,7 @@
 <br>
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/ThinkMars/company/refs/heads/refactor/playground/public/company.png" style="width:100px;" />
+<img src="https://raw.githubusercontent.com/ThinkMars/company/refs/heads/main/playground/public/company.png" style="width:100px;" />
 </p>
 
 <h1 align="center">Company</h1>
