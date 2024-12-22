@@ -5,9 +5,21 @@ export default defineConfig({
   title: 'Company',
   description: 'collect more enterprise products',
   srcDir: 'src', // https://vitepress.dev/reference/site-config
-  head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
+  head: [
+    [
+      'link',
+      {
+        rel: 'icon',
+        href: 'https://raw.githubusercontent.com/ThinkMars/company/refs/heads/refactor/playground/public/favicon.ico',
+      },
+    ],
+  ],
   themeConfig: {
-    logo: { src: '/company.png', width: 24, height: 24 },
+    logo: {
+      src: 'https://raw.githubusercontent.com/ThinkMars/company/refs/heads/refactor/playground/public/company.png',
+      width: 24,
+      height: 24,
+    },
     // https://vitepress.dev/reference/default-theme-config
     nav: [],
     search: {
