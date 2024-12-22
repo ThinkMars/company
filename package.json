@@ -5,7 +5,7 @@
   "engines": {
     "node": "^18.0.0 || >=20.0.0"
   },
-  "packageManager": "pnpm@9.11.0",
+  "packageManager": "pnpm@9.15.1",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "simple-git-hooks",
@@ -15,7 +15,6 @@
     "server": "pnpm --filter @company/nest-server run start:dev",
     "client": "pnpm --filter @company/playground run dev",
     "build": "pnpm -r --filter='./packages/*' run build",
-    "chatgpt": "pnpm -r --filter @company/chatgpt run dev",
     "test": "vitest"
   },
   "repository": {
@@ -39,7 +38,6 @@
     "simple-git-hooks": "^2.11.1",
     "tslib": "^2.7.0",
     "typescript-eslint": "^8.7.0",
-    "vite": "^5.4.8",
     "vitest": "^2.1.1"
   },
   "simple-git-hooks": {

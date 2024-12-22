@@ -2,44 +2,54 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: '我的公司',
+  title: 'Company',
   description: 'collect more enterprise products',
   srcDir: 'src', // https://vitepress.dev/reference/site-config
-  themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      { text: '首页', link: '/' },
-      { text: '指标监控', link: '/web-metrics-performance' },
-      { text: '类GPT', link: '/my-gpt' },
+  head: [
+    [
+      'link',
+      {
+        rel: 'icon',
+        href: 'https://raw.githubusercontent.com/ThinkMars/company/refs/heads/refactor/playground/public/favicon.ico',
+      },
     ],
+  ],
+  themeConfig: {
+    logo: {
+      src: 'https://raw.githubusercontent.com/ThinkMars/company/refs/heads/refactor/playground/public/company.png',
+      width: 24,
+      height: 24,
+    },
+    // https://vitepress.dev/reference/default-theme-config
+    nav: [],
+    search: {
+      provider: 'local',
+    },
+    docFooter: {
+      prev: '上一个',
+      next: '下一个',
+    },
     sidebar: {
       '/': [
         {
-          text: '',
+          text: '介绍',
+          items: [{ text: '是什么', link: '/introduction/what' }],
+        },
+        {
+          text: '作品列表',
           items: [
-            { text: '是什么', link: '/introduction' },
-            { text: '产品列表', link: '/introduction/product-list' },
+            { text: '性能指标', link: '/products/web-metrics' },
+            { text: '聊天GPT', link: '/products/want-chat' },
           ],
-        },
-      ],
-      '/my-gpt/': [
-        {
-          text: '',
-          items: [{ text: '类GPT', link: '/my-gpt/' }],
-        },
-      ],
-      '/web-metrics-performance/': [
-        {
-          text: '',
-          items: [{ text: '性能指标', link: '/web-metrics-performance/' }],
         },
       ],
     },
     footer: {
-      message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024-present ThinkMars',
+      message:
+        '<a href="https://github.com/ThinkMars/company/blob/main/LICENSE" target="_blank">MIT License</a>',
+      copyright:
+        'Copyright © 2024-present <a href="https://github.com/ThinkMars" target="_blank">ThinkMars</a>',
     },
-
     socialLinks: [
       { icon: 'github', link: 'https://github.com/ThinkMars/company' },
     ],

@@ -3,16 +3,16 @@
 layout: home
 
 hero:
-  name: '我的公司'
+  name: 'WEB开源作品集'
   text: ''
-  tagline: 思路来源于网络，仅供学习交流
+  tagline: 思路来源于网络各大论坛，仅供学习交流
   actions:
     - theme: brand
       text: 是什么？
-      link: /introduction
+      link: /introduction/what
     - theme: alt
-      text: 产品列表
-      link: /introduction/product-list
+      text: 作品列表
+      link: /products/web-metrics
 
 features:
   - title: 性能指标监控
@@ -22,5 +22,5 @@ features:
   - title: CI-CD
     details: 提供持续集成和持续部署功能，确保代码质量和项目稳定性。
   - title: 更多
-    details: 持续补充更多企业级功能...
+    details: 持续补充更多作品...
 ---
