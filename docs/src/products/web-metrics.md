@@ -1,4 +1,8 @@
-# 性能指标监控
+# 页面指标监控工具
+
+## 仓库
+
+[web-metrics](https://github.com/ThinkMars/company/tree/main/packages/web-metrics)
 
 ## 介绍
 
@@ -6,7 +10,7 @@
 
 ## 安装
 
-⚠️NOTE: 本项目未选择发布到npm，请内部学习使用。
+⚠️注意: 本项目未选择发布到npm，请内部学习使用。
 
 ## 用法
 
