@@ -1,6 +1,4 @@
 .pnpm-store
-docs/.vitepress/dist
-docs/.vitepress/cache
 
 .eslintcache
 # compiled output
@@ -34,6 +32,7 @@ coverage
 *.sublime-workspace
 
 # IDE - VSCode
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
