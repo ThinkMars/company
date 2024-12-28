@@ -41,15 +41,12 @@ export class WantChatService {
         throw new Error('No response body available')
       }
 
-      // 使用 Node.js 的流处理
       const stream = Readable.from(aiResponse.body)
       let buffer = ''
 
       stream.on('data', (chunk) => {
         buffer += chunk.toString()
         const lines = buffer.split('\n')
-
-        // 处理完整的行，保留最后一个不完整的行
         buffer = lines.pop() || ''
 
         for (const line of lines) {
@@ -61,7 +58,7 @@ export class WantChatService {
               const parsed = JSON.parse(data)
               const content = parsed.choices[0]?.delta?.content || ''
               if (content) {
-                response.write(JSON.stringify({ content }))
+                response.write(`data: ${JSON.stringify({ content })}\n\n`)
               }
             } catch (e) {
               console.warn('Failed to parse AI response:', e)
@@ -71,18 +68,18 @@ export class WantChatService {
       })
 
       stream.on('end', () => {
-        response.write(JSON.stringify({ content: '' }))
+        response.write(`data: ${JSON.stringify({ content: '' })}\n\n`)
         response.end()
       })
 
       stream.on('error', (error) => {
         console.error('Stream error:', error)
-        response.write(JSON.stringify({ error: error.message }))
+        response.write(`data: ${JSON.stringify({ error: error.message })}\n\n`)
         response.end()
       })
     } catch (error) {
       console.error('AI stream error:', error)
-      response.write(JSON.stringify({ error: error.message }))
+      response.write(`data: ${JSON.stringify({ error: error.message })}\n\n`)
       response.end()
     }
   }

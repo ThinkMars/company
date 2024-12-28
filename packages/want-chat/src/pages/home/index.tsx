@@ -104,15 +104,21 @@ const Home: FC = () => {
             break
           }
 
-          const chunk = decoder.decode(value, { stream: true })
-          try {
-            const data = JSON.parse(chunk)
-            if (data.content) {
-              currentContent += data.content
-              onUpdate(currentContent)
+          const text = decoder.decode(value, { stream: true })
+          const lines = text.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.content) {
+                  currentContent += data.content
+                  onUpdate(currentContent)
+                }
+              } catch (e) {
+                console.warn('Failed to parse SSE data:', line)
+              }
             }
-          } catch (e) {
-            console.warn('Failed to parse chunk:', chunk)
           }
         }
       } catch (error) {

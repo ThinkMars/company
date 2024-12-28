@@ -20,11 +20,13 @@ export class WantChatController {
     try {
       const apiKey = auth?.replace('Bearer ', '')
 
-      // 设置响应头
-      response.setHeader('Content-Type', 'application/json')
-      response.setHeader('Transfer-Encoding', 'chunked')
+      // 修改响应头设置
+      response.setHeader('Content-Type', 'text/event-stream')
+      response.setHeader('Cache-Control', 'no-cache')
+      response.setHeader('Connection', 'keep-alive')
+      response.setHeader('X-Accel-Buffering', 'no') // 禁用 Nginx 缓冲
+      response.flushHeaders() // 立即发送响应头
 
-      // 调用service处理流式响应
       await this.wantChatService.handleStreamResponse(
         body.message,
         apiKey,
