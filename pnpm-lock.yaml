@@ -131,6 +131,9 @@ importers:
       antd-style:
         specifier: ^3.7.1
         version: 3.7.1(@types/react@18.3.16)(antd@5.22.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      normalize.css:
+        specifier: ^8.0.1
+        version: 8.0.1
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -5045,6 +5048,12 @@ packages:
         integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==,
       }
     engines: { node: '>=0.10.0' }
+
+  normalize.css@8.0.1:
+    resolution:
+      {
+        integrity: sha512-qizSNPO93t1YUuUhP22btGOo3chcvDFqFaj2TRybP0DMxkHOCTYwp3n34fel4a31ORXy4m1Xq0Gyqpb5m33qIg==,
+      }
 
   npm-run-path@5.3.0:
     resolution:
@@ -10366,6 +10375,8 @@ snapshots:
   node-releases@2.0.18: {}
 
   normalize-path@3.0.0: {}
+
+  normalize.css@8.0.1: {}
 
   npm-run-path@5.3.0:
     dependencies:

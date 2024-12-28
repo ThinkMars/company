@@ -33,18 +33,26 @@ const defaultConversationsItems = [
 ]
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
-  ai: {
+  assistant: {
     placement: 'start',
     typing: { step: 5, interval: 20 },
+    avatar: {
+      src: 'https://api.dicebear.com/7.x/bottts/svg?seed=ai', // AI头像
+      style: { backgroundColor: '#f0f0f0' },
+    },
     styles: {
       content: {
         borderRadius: 16,
       },
     },
   },
-  local: {
+  user: {
     placement: 'end',
     variant: 'shadow',
+    avatar: {
+      src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user', // 用户头像
+      style: { backgroundColor: '#f0f0f0' },
+    },
   },
 }
 
@@ -74,6 +82,7 @@ const Home: FC = () => {
     request: async ({ message }, { onUpdate, onSuccess, onError }) => {
       try {
         const apiKey = sessionStorage.getItem('apiKey')
+        let currentContent = ''
 
         const response = await fetch(`http://localhost:3000/want-chat/stream`, {
           method: 'POST',
@@ -88,42 +97,48 @@ const Home: FC = () => {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        const reader = response.body?.getReader()
-        if (!reader) {
-          throw new Error('No reader available')
-        }
+        // 立即显示一个空的回复
+        onUpdate('')
 
-        const decoder = new TextDecoder()
-        let currentContent = ''
+        // 创建文本解码流
+        const textStream = response.body!.pipeThrough(new TextDecoderStream())
+        const reader = textStream.getReader()
 
-        while (true) {
+        let buffer = ''
+        const processChunk = async () => {
           const { done, value } = await reader.read()
-
           if (done) {
             onSuccess(currentContent)
-            break
+            reader.releaseLock()
+            return
           }
 
-          const text = decoder.decode(value, { stream: true })
-          const lines = text.split('\n')
+          buffer += value
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.slice(6))
+                const data = JSON.parse(line.slice(6)) as { content: string }
                 if (data.content) {
                   currentContent += data.content
                   onUpdate(currentContent)
                 }
               } catch (e) {
-                console.warn('Failed to parse SSE data:', line)
+                console.warn('Failed to parse SSE data:', line, e)
               }
             }
           }
+
+          // 递归处理下一个数据块
+          await processChunk()
         }
+
+        await processChunk()
       } catch (error) {
         console.error('Streaming error:', error)
-        onError(error)
+        onError(error as Error)
       }
     },
   })
@@ -176,7 +191,7 @@ const Home: FC = () => {
   }
 
   /**
-   * @description 附件改变
+   * @description 附件��
    */
   const handleFileChange: GetProp<typeof Attachments, 'onChange'> = (info) =>
     setAttachedFiles(info.fileList)
@@ -186,7 +201,7 @@ const Home: FC = () => {
     ({ id, message, status }) => ({
       key: id,
       loading: status === 'loading',
-      role: status === 'local' ? 'local' : 'ai',
+      role: status === 'local' ? 'user' : 'assistant',
       content: message,
     }),
   )
@@ -195,18 +210,7 @@ const Home: FC = () => {
   return (
     <div className={styles.layout}>
       <div className={styles.menu}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0 16px',
-          }}
-        >
-          <LogoNode />
-          <UserNode />
-        </div>
-        {/* 🌟 添加会话 */}
+        <LogoNode />
         <Button
           onClick={onAddConversation}
           type="link"
@@ -215,7 +219,6 @@ const Home: FC = () => {
         >
           新建会话
         </Button>
-        {/* 🌟 会话管理 */}
         <Conversations
           items={conversationsItems}
           className={styles.conversations}
@@ -224,7 +227,9 @@ const Home: FC = () => {
         />
       </div>
       <div className={styles.chat}>
-        {/* 🌟 消息列表 */}
+        <div className={styles.chatHeader}>
+          <UserNode />
+        </div>
         <Bubble.List
           items={
             messageItems.length > 0
@@ -242,9 +247,7 @@ const Home: FC = () => {
           roles={roles}
           className={styles.messages}
         />
-        {/* 🌟 提示词 */}
         <Prompts items={senderPromptsItems} onItemClick={onPromptsItemClick} />
-        {/* 🌟 输入框 */}
         <Sender
           value={inputContent}
           header={SenderHeader({
