@@ -17,3 +17,7 @@ pnpm install
 
 pnpm dev
 ```
+
+## example
+
+![example](./public/want-chat-example.png)

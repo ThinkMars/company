@@ -337,7 +337,7 @@ const Home: FC = () => {
   const menuConfig: ConversationsProps['menu'] = (conversation) => ({
     items: [
       {
-        label: conversation.label,
+        label: '删除',
         key: conversation.key,
         icon: <DeleteOutlined />,
         danger: true,
