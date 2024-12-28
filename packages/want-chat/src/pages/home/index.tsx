@@ -1,16 +1,20 @@
 import {
   Attachments,
   Bubble,
+  BubbleProps,
   Conversations,
+  ConversationsProps,
   Prompts,
   Sender,
   useXAgent,
   useXChat,
 } from '@ant-design/x'
-import { useEffect, useState, type FC } from 'react'
+import { useEffect, useState, type FC, useRef } from 'react'
 
-import { PlusOutlined } from '@ant-design/icons'
-import { Button, type GetProp } from 'antd'
+import { PlusOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Button, type GetProp, message, Modal, Typography } from 'antd'
+
+import markdownit from 'markdown-it'
 
 import { useStyle } from './use-style'
 import { placeholderPromptsItems } from './placeholder-prompts-items'
@@ -19,32 +23,50 @@ import PlaceholderNode from './nodes/placeholder-node'
 import AttachmentsNode from './nodes/attachment-node'
 import SenderHeader from './sender-header'
 import LogoNode from './nodes/logo-node'
+import UserNode from './nodes/user-node'
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const md = markdownit({ html: true, breaks: true })
 // ==================== Data ====================
-/**
- * @description default conversations items, beside the window
- */
-const defaultConversationsItems = [
-  {
-    key: '0',
-    label: '对话',
-  },
-]
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
-  ai: {
+  assistant: {
     placement: 'start',
     typing: { step: 5, interval: 20 },
+    avatar: {
+      src: 'https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp', // AI头像
+      style: { backgroundColor: '#f0f0f0' },
+    },
     styles: {
       content: {
         borderRadius: 16,
       },
     },
   },
-  local: {
+  user: {
     placement: 'end',
     variant: 'shadow',
+    avatar: {
+      icon: <UserOutlined />, // 用户头像
+      style: { backgroundColor: '#f0f0f0' },
+      shape: 'circle',
+      size: 'large',
+    },
   },
+}
+
+// 添加消息类型定义
+interface ChatMessage {
+  id: string
+  message: string
+  status: 'loading' | 'local' | 'success' | 'error'
+}
+
+// 修改会话类型定义
+interface Conversation {
+  key: string
+  label: string
+  messages: ChatMessage[]
 }
 
 const Home: FC = () => {
@@ -53,43 +75,165 @@ const Home: FC = () => {
 
   // ==================== State ====================
   const [headerOpen, setHeaderOpen] = useState(false)
+  const [isRequesting, setRequesting] = useState(false)
 
-  const [content, setContent] = useState('')
+  const [inputContent, setInputContent] = useState('')
 
-  const [conversationsItems, setConversationsItems] = useState(
-    defaultConversationsItems,
-  )
+  const [conversations, setConversations] = useState<Conversation[]>([
+    {
+      key: '0',
+      label: '默认对话',
+      messages: [],
+    },
+  ])
 
-  const [activeKey, setActiveKey] = useState(defaultConversationsItems[0].key)
+  const [activeConversationKey, setActiveConversationKey] = useState('0')
 
   const [attachedFiles, setAttachedFiles] = useState<
     GetProp<typeof Attachments, 'items'>
   >([])
 
   // ==================== Runtime ====================
+  const abortController = useRef<AbortController | null>(null)
+
   const [agent] = useXAgent({
-    request: async ({ message }, { onSuccess }) => {
-      console.log('message: ', message)
-      // TODO: request to agent
-      onSuccess(`模拟回复: ${message}`)
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    request: async ({ message }, { onUpdate, onSuccess, onError }) => {
+      try {
+        const apiKey = sessionStorage.getItem('apiKey')
+        let currentContent = ''
+
+        // 创建新的 AbortController
+        abortController.current = new AbortController()
+
+        setRequesting(true)
+
+        const response = await fetch(`http://localhost:3000/want-chat/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({ message }),
+          signal: abortController.current.signal, // 添加 signal
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        // 立即显示一个空的回复
+        onUpdate('')
+
+        // 创建文本解码流
+        const textStream = response.body!.pipeThrough(new TextDecoderStream())
+        const reader = textStream.getReader()
+
+        let buffer = ''
+        const processChunk = async () => {
+          try {
+            const { done, value } = await reader.read()
+            if (done) {
+              onSuccess(currentContent)
+              setRequesting(false)
+              reader.releaseLock()
+              return
+            }
+
+            buffer += value
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6)) as { content: string }
+                  if (data.content) {
+                    currentContent += data.content
+                    onUpdate(currentContent)
+                  }
+                } catch (e) {
+                  console.warn('Failed to parse SSE data:', line, e)
+                }
+              }
+            }
+
+            // 递归处理下一个数据块
+            await processChunk()
+          } catch (error) {
+            if (error.name === 'AbortError') {
+              reader.releaseLock()
+              return
+            }
+            throw error
+          }
+        }
+
+        await processChunk()
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log('Request aborted')
+          return
+        }
+        console.error('Streaming error:', error)
+        onError(error as Error)
+        setRequesting(false)
+      } finally {
+        abortController.current = null
+      }
     },
   })
 
+  // 使用 useXChat 时使用当前会话的消息
   const { onRequest, messages, setMessages } = useXChat({
     agent,
   })
 
+  // 修改消息监听逻辑，添加错误处理
   useEffect(() => {
-    if (activeKey !== undefined) {
-      setMessages([])
+    if (messages.length > 0) {
+      try {
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.key === activeConversationKey
+              ? {
+                  ...conv,
+                  messages: messages.map((msg) => ({
+                    id: String(msg.id),
+                    message: msg.message,
+                    status: msg.status,
+                  })),
+                }
+              : conv,
+          ),
+        )
+      } catch (error) {
+        console.error('Failed to update conversation messages:', error)
+      }
     }
-  }, [activeKey, setMessages])
+  }, [messages, activeConversationKey])
 
   // ==================== Event ====================
-  const onSubmit = (nextContent: string) => {
+  const onInputSubmit = (nextContent: string) => {
     if (!nextContent) return
     onRequest(nextContent)
-    setContent('')
+    setInputContent('')
+  }
+  // 取消发送
+  const onInputCancel = () => {
+    if (abortController.current) {
+      abortController.current.abort()
+      abortController.current = null
+    }
+    setInputContent('')
+    const failMessages = messages.slice(-1)
+    failMessages.forEach((msg) => {
+      msg.status = 'error'
+      msg.message = '本次回答已被终止'
+    })
+
+    setMessages([...messages.slice(0, -1), ...failMessages])
+    setRequesting(false)
   }
 
   const onPromptsItemClick: GetProp<typeof Prompts, 'onItemClick'> = (info) => {
@@ -100,15 +244,17 @@ const Home: FC = () => {
    * @description 添加会话
    */
   const onAddConversation = () => {
-    setConversationsItems([
-      ...conversationsItems,
+    const newKey = `${conversations.length}`
+    setConversations([
+      ...conversations,
       {
-        key: `${conversationsItems.length}`,
-        label: `新对话 ${conversationsItems.length}`,
+        key: newKey,
+        label: `新对话 ${conversations.length}`,
+        messages: [],
       },
     ])
-    // 定位到最后一个
-    setActiveKey(`${conversationsItems.length}`)
+    setActiveConversationKey(newKey)
+    setMessages([]) // 清空当前显示的消息
   }
 
   /**
@@ -117,32 +263,108 @@ const Home: FC = () => {
   const onConversationClick: GetProp<typeof Conversations, 'onActiveChange'> = (
     key,
   ) => {
-    setActiveKey(key)
+    try {
+      setActiveConversationKey(key)
+      const targetConvMessages =
+        conversations.find((conv) => conv.key === key)?.messages ?? []
+      setMessages(targetConvMessages)
+    } catch (error) {
+      console.error('Failed to switch conversation:', error)
+      Modal.error({
+        title: '切换失败',
+        content: '切换会话时发生错误，请稍后重试。',
+      })
+    }
   }
 
   /**
-   * @description 附件改变
+   * @description 附件
    */
   const handleFileChange: GetProp<typeof Attachments, 'onChange'> = (info) =>
     setAttachedFiles(info.fileList)
 
+  /**
+   * @description 删除会话
+   */
+  const handleDeleteConversation = (key: string) => {
+    if (key === '0') return // 不允许删除第一个对话
+
+    try {
+      setConversations((prev) => prev.filter((conv) => conv.key !== key))
+
+      // 如果删除的是当前对话，切换到第一个对话
+      if (key === activeConversationKey) {
+        setActiveConversationKey('0')
+        const firstConvMessages =
+          conversations.find((conv) => conv.key === '0')?.messages ?? []
+        setMessages(firstConvMessages)
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error)
+      Modal.error({
+        title: '删除失败',
+        content: '删除会话时发生错误，请稍后重试。',
+      })
+    }
+  }
+
+  const renderMarkdown: BubbleProps['messageRender'] = (content) => (
+    <Typography>
+      <div dangerouslySetInnerHTML={{ __html: md.render(content) }} />
+    </Typography>
+  )
+
   // ==================== Nodes ====================
-  const items: GetProp<typeof Bubble.List, 'items'> = messages.map(
+  const messageItems: GetProp<typeof Bubble.List, 'items'> = messages.map(
     ({ id, message, status }) => ({
       key: id,
       loading: status === 'loading',
-      role: status === 'local' ? 'local' : 'ai',
+      role: status === 'local' ? 'user' : 'assistant',
       content: message,
+      // although it's not a real typing, but it's a good way to show the loading state
+      typing: { step: 2, interval: 50, suffix: <>💗</> },
+      messageRender: renderMarkdown,
     }),
   )
+
+  // 修改会话列表项的渲染
+  const conversationsItems = conversations.map((conv) => ({
+    key: conv.key,
+    label: conv.label,
+  }))
+
+  // action menu
+  const menuConfig: ConversationsProps['menu'] = (conversation) => ({
+    items: [
+      {
+        label: '删除',
+        key: conversation.key,
+        icon: <DeleteOutlined />,
+        danger: true,
+      },
+    ],
+    onClick: (menuInfo) => {
+      if (menuInfo.key === '0') {
+        message.warning('默认对话无法删除')
+        return
+      }
+
+      Modal.confirm({
+        title: '确认删除',
+        content: '确定要删除这个对话吗？删除后无法恢复。',
+        okText: '确认',
+        cancelText: '取消',
+        okButtonProps: { danger: true },
+        onOk: () => handleDeleteConversation(menuInfo.key),
+      })
+    },
+  })
 
   // ==================== Render =================
   return (
     <div className={styles.layout}>
       <div className={styles.menu}>
-        {/* 🌟 Logo */}
         <LogoNode />
-        {/* 🌟 添加会话 */}
         <Button
           onClick={onAddConversation}
           type="link"
@@ -151,50 +373,60 @@ const Home: FC = () => {
         >
           新建会话
         </Button>
-        {/* 🌟 会话管理 */}
         <Conversations
+          menu={menuConfig}
           items={conversationsItems}
           className={styles.conversations}
-          activeKey={activeKey}
+          activeKey={activeConversationKey}
           onActiveChange={onConversationClick}
         />
       </div>
-      <div className={styles.chat}>
-        {/* 🌟 消息列表 */}
-        <Bubble.List
-          items={
-            items.length > 0
-              ? items
-              : [
-                  {
-                    content: PlaceholderNode({
-                      placeholderPromptsItems,
-                      onPromptsItemClick,
-                    }),
-                    variant: 'borderless',
-                  },
-                ]
-          }
-          roles={roles}
-          className={styles.messages}
-        />
-        {/* 🌟 提示词 */}
-        <Prompts items={senderPromptsItems} onItemClick={onPromptsItemClick} />
-        {/* 🌟 输入框 */}
-        <Sender
-          value={content}
-          header={SenderHeader({
-            headerOpen,
-            setHeaderOpen,
-            attachedFiles,
-            handleFileChange,
-          })}
-          onSubmit={onSubmit}
-          onChange={setContent}
-          prefix={AttachmentsNode({ attachedFiles, headerOpen, setHeaderOpen })}
-          loading={agent.isRequesting()}
-          className={styles.sender}
-        />
+      <div className={styles.rightContent}>
+        <div className={styles.chatHeader}>
+          <UserNode />
+        </div>
+        <div className={styles.chat}>
+          <Bubble.List
+            items={
+              messageItems.length > 0
+                ? messageItems
+                : [
+                    {
+                      content: PlaceholderNode({
+                        placeholderPromptsItems,
+                        onPromptsItemClick,
+                      }),
+                      variant: 'borderless',
+                    },
+                  ]
+            }
+            roles={roles}
+            className={styles.messages}
+          />
+          <Prompts
+            items={senderPromptsItems}
+            onItemClick={onPromptsItemClick}
+          />
+          <Sender
+            value={inputContent}
+            header={SenderHeader({
+              headerOpen,
+              setHeaderOpen,
+              attachedFiles,
+              handleFileChange,
+            })}
+            onSubmit={onInputSubmit}
+            onCancel={onInputCancel}
+            onChange={setInputContent}
+            prefix={AttachmentsNode({
+              attachedFiles,
+              headerOpen,
+              setHeaderOpen,
+            })}
+            loading={isRequesting}
+            className={styles.sender}
+          />
+        </div>
       </div>
     </div>
   )

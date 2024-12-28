@@ -4,8 +4,9 @@ This package provides a simple interface to the OpenAI ChatGPT API. It allows yo
 
 ## introduction
 
-- Base on [Ant Design](https://ant-design-x.antgroup.com). The AI interface solutions and pioneering intelligent experiences.
-- Base on [Zhipu GLM](https://bigmodel.cn). One of the most excellent LLM in the world.
+- Base on [Ant Design X](https://ant-design-x.antgroup.com). The AI interface solutions and pioneering intelligent experiences.
+- Base on [Zhipu GLM（glm-4v）](https://bigmodel.cn). One of the most excellent LLM in the world.
+- Base on [Cursor](https://www.cursor.com). The cool crazy AI code editor.
 
 ## usage
 
@@ -16,3 +17,7 @@ pnpm install
 
 pnpm dev
 ```
+
+## example
+
+![example](./public/want-chat-example.png)
