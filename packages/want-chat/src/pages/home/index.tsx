@@ -1,6 +1,7 @@
 import {
   Attachments,
   Bubble,
+  BubbleProps,
   Conversations,
   ConversationsProps,
   Prompts,
@@ -8,10 +9,12 @@ import {
   useXAgent,
   useXChat,
 } from '@ant-design/x'
-import { useEffect, useState, type FC } from 'react'
+import { useEffect, useState, type FC, useRef } from 'react'
 
 import { PlusOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Button, type GetProp, message, Modal } from 'antd'
+import { Button, type GetProp, message, Modal, Typography } from 'antd'
+
+import markdownit from 'markdown-it'
 
 import { useStyle } from './use-style'
 import { placeholderPromptsItems } from './placeholder-prompts-items'
@@ -22,6 +25,8 @@ import SenderHeader from './sender-header'
 import LogoNode from './nodes/logo-node'
 import UserNode from './nodes/user-node'
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const md = markdownit({ html: true, breaks: true })
 // ==================== Data ====================
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
@@ -70,6 +75,7 @@ const Home: FC = () => {
 
   // ==================== State ====================
   const [headerOpen, setHeaderOpen] = useState(false)
+  const [isRequesting, setRequesting] = useState(false)
 
   const [inputContent, setInputContent] = useState('')
 
@@ -88,12 +94,17 @@ const Home: FC = () => {
   >([])
 
   // ==================== Runtime ====================
+  const abortController = useRef<AbortController | null>(null)
+
   const [agent] = useXAgent({
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     request: async ({ message }, { onUpdate, onSuccess, onError }) => {
       try {
         const apiKey = sessionStorage.getItem('apiKey')
         let currentContent = ''
+
+        // 创建新的 AbortController
+        abortController.current = new AbortController()
 
         const response = await fetch(`http://localhost:3000/want-chat/stream`, {
           method: 'POST',
@@ -102,6 +113,7 @@ const Home: FC = () => {
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({ message }),
+          signal: abortController.current.signal, // 添加 signal
         })
 
         if (!response.ok) {
@@ -117,39 +129,54 @@ const Home: FC = () => {
 
         let buffer = ''
         const processChunk = async () => {
-          const { done, value } = await reader.read()
-          if (done) {
-            onSuccess(currentContent)
-            reader.releaseLock()
-            return
-          }
+          try {
+            const { done, value } = await reader.read()
+            if (done) {
+              onSuccess(currentContent)
+              reader.releaseLock()
+              return
+            }
 
-          buffer += value
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
+            buffer += value
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6)) as { content: string }
-                if (data.content) {
-                  currentContent += data.content
-                  onUpdate(currentContent)
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6)) as { content: string }
+                  if (data.content) {
+                    currentContent += data.content
+                    onUpdate(currentContent)
+                  }
+                } catch (e) {
+                  console.warn('Failed to parse SSE data:', line, e)
                 }
-              } catch (e) {
-                console.warn('Failed to parse SSE data:', line, e)
               }
             }
-          }
 
-          // 递归处理下一个数据块
-          await processChunk()
+            // 递归处理下一个数据块
+            await processChunk()
+          } catch (error) {
+            if (error.name === 'AbortError') {
+              reader.releaseLock()
+              return
+            }
+            throw error
+          }
         }
 
         await processChunk()
       } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log('Request aborted')
+          return
+        }
         console.error('Streaming error:', error)
         onError(error as Error)
+        setRequesting(false)
+      } finally {
+        abortController.current = null
       }
     },
   })
@@ -186,8 +213,25 @@ const Home: FC = () => {
   // ==================== Event ====================
   const onInputSubmit = (nextContent: string) => {
     if (!nextContent) return
+    setRequesting(true)
     onRequest(nextContent)
     setInputContent('')
+  }
+  // 取消发送
+  const onInputCancel = () => {
+    if (abortController.current) {
+      abortController.current.abort()
+      abortController.current = null
+    }
+    setInputContent('')
+    const failMessages = messages.slice(-1)
+    failMessages.forEach((msg) => {
+      msg.status = 'error'
+      msg.message = '本次回答已被终止'
+    })
+
+    setMessages([...messages.slice(0, -1), ...failMessages])
+    setRequesting(false)
   }
 
   const onPromptsItemClick: GetProp<typeof Prompts, 'onItemClick'> = (info) => {
@@ -262,6 +306,12 @@ const Home: FC = () => {
     }
   }
 
+  const renderMarkdown: BubbleProps['messageRender'] = (content) => (
+    <Typography>
+      <div dangerouslySetInnerHTML={{ __html: md.render(content) }} />
+    </Typography>
+  )
+
   // ==================== Nodes ====================
   const messageItems: GetProp<typeof Bubble.List, 'items'> = messages.map(
     ({ id, message, status }) => ({
@@ -269,6 +319,9 @@ const Home: FC = () => {
       loading: status === 'loading',
       role: status === 'local' ? 'user' : 'assistant',
       content: message,
+      // although it's not a real typing, but it's a good way to show the loading state
+      typing: { step: 2, interval: 50, suffix: <>💗</> },
+      messageRender: renderMarkdown,
     }),
   )
 
@@ -361,13 +414,14 @@ const Home: FC = () => {
               handleFileChange,
             })}
             onSubmit={onInputSubmit}
+            onCancel={onInputCancel}
             onChange={setInputContent}
             prefix={AttachmentsNode({
               attachedFiles,
               headerOpen,
               setHeaderOpen,
             })}
-            loading={agent.isRequesting()}
+            loading={isRequesting}
             className={styles.sender}
           />
         </div>
