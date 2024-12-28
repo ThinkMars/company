@@ -106,6 +106,8 @@ const Home: FC = () => {
         // 创建新的 AbortController
         abortController.current = new AbortController()
 
+        setRequesting(true)
+
         const response = await fetch(`http://localhost:3000/want-chat/stream`, {
           method: 'POST',
           headers: {
@@ -133,6 +135,7 @@ const Home: FC = () => {
             const { done, value } = await reader.read()
             if (done) {
               onSuccess(currentContent)
+              setRequesting(false)
               reader.releaseLock()
               return
             }
@@ -213,7 +216,6 @@ const Home: FC = () => {
   // ==================== Event ====================
   const onInputSubmit = (nextContent: string) => {
     if (!nextContent) return
-    setRequesting(true)
     onRequest(nextContent)
     setInputContent('')
   }
