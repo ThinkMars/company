@@ -45,16 +45,31 @@ export const useStyle = createStyles(({ token, css }) => ({
       min-width: 240px;
     }
   `,
-  chat: css`
+  rightContent: css`
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     height: 100%;
+    overflow: hidden;
+  `,
+  chatHeader: css`
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-bottom: 1px solid ${token.colorBorderSecondary};
+    background: ${token.colorBgContainer};
+  `,
+  chat: css`
+    flex: 1;
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
+    padding: 24px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    padding: ${token.paddingLG}px;
     gap: 16px;
+    overflow: auto;
 
     @media (max-width: 1400px) {
       max-width: 800px;
@@ -127,11 +142,5 @@ export const useStyle = createStyles(({ token, css }) => ({
     border: 1px solid #1677ff34;
     width: calc(100% - 24px);
     margin: 0 12px 24px 12px;
-  `,
-  chatHeader: css`
-    display: flex;
-    justify-content: flex-end;
-    padding: 8px 0;
-    margin-bottom: 16px;
   `,
 }))

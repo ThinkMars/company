@@ -9,7 +9,7 @@ import {
 } from '@ant-design/x'
 import { useEffect, useState, type FC } from 'react'
 
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, type GetProp } from 'antd'
 
 import { useStyle } from './use-style'
@@ -37,7 +37,7 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
     placement: 'start',
     typing: { step: 5, interval: 20 },
     avatar: {
-      src: 'https://api.dicebear.com/7.x/bottts/svg?seed=ai', // AI头像
+      src: 'https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp', // AI头像
       style: { backgroundColor: '#f0f0f0' },
     },
     styles: {
@@ -50,8 +50,10 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
     placement: 'end',
     variant: 'shadow',
     avatar: {
-      src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user', // 用户头像
+      icon: <UserOutlined />, // 用户头像
       style: { backgroundColor: '#f0f0f0' },
+      shape: 'circle',
+      size: 'large',
     },
   },
 }
@@ -79,6 +81,7 @@ const Home: FC = () => {
 
   // ==================== Runtime ====================
   const [agent] = useXAgent({
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     request: async ({ message }, { onUpdate, onSuccess, onError }) => {
       try {
         const apiKey = sessionStorage.getItem('apiKey')
@@ -191,7 +194,7 @@ const Home: FC = () => {
   }
 
   /**
-   * @description 附件��
+   * @description 附件
    */
   const handleFileChange: GetProp<typeof Attachments, 'onChange'> = (info) =>
     setAttachedFiles(info.fileList)
@@ -226,42 +229,51 @@ const Home: FC = () => {
           onActiveChange={onConversationClick}
         />
       </div>
-      <div className={styles.chat}>
+      <div className={styles.rightContent}>
         <div className={styles.chatHeader}>
           <UserNode />
         </div>
-        <Bubble.List
-          items={
-            messageItems.length > 0
-              ? messageItems
-              : [
-                  {
-                    content: PlaceholderNode({
-                      placeholderPromptsItems,
-                      onPromptsItemClick,
-                    }),
-                    variant: 'borderless',
-                  },
-                ]
-          }
-          roles={roles}
-          className={styles.messages}
-        />
-        <Prompts items={senderPromptsItems} onItemClick={onPromptsItemClick} />
-        <Sender
-          value={inputContent}
-          header={SenderHeader({
-            headerOpen,
-            setHeaderOpen,
-            attachedFiles,
-            handleFileChange,
-          })}
-          onSubmit={onInputSubmit}
-          onChange={setInputContent}
-          prefix={AttachmentsNode({ attachedFiles, headerOpen, setHeaderOpen })}
-          loading={agent.isRequesting()}
-          className={styles.sender}
-        />
+        <div className={styles.chat}>
+          <Bubble.List
+            items={
+              messageItems.length > 0
+                ? messageItems
+                : [
+                    {
+                      content: PlaceholderNode({
+                        placeholderPromptsItems,
+                        onPromptsItemClick,
+                      }),
+                      variant: 'borderless',
+                    },
+                  ]
+            }
+            roles={roles}
+            className={styles.messages}
+          />
+          <Prompts
+            items={senderPromptsItems}
+            onItemClick={onPromptsItemClick}
+          />
+          <Sender
+            value={inputContent}
+            header={SenderHeader({
+              headerOpen,
+              setHeaderOpen,
+              attachedFiles,
+              handleFileChange,
+            })}
+            onSubmit={onInputSubmit}
+            onChange={setInputContent}
+            prefix={AttachmentsNode({
+              attachedFiles,
+              headerOpen,
+              setHeaderOpen,
+            })}
+            loading={agent.isRequesting()}
+            className={styles.sender}
+          />
+        </div>
       </div>
     </div>
   )

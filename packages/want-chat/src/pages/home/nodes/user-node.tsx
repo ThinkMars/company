@@ -25,7 +25,7 @@ const useStyles = createStyles(({ token, css }) => ({
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding-bottom: 16px;
     border-bottom: 1px solid ${token.colorBorderSecondary};
 
     // 亮色主题
@@ -115,11 +115,7 @@ const UserNode = () => {
   const userCard = (
     <Card className={styles.card} bordered={false}>
       <div className={styles.header}>
-        <Avatar
-          size="large"
-          icon={<UserOutlined />}
-          src="https://api.dicebear.com/7.x/avataaars/svg?seed=user"
-        />
+        <Avatar size="large" icon={<UserOutlined />} />
         <div>
           <div style={{ fontWeight: 500 }}>{username}</div>
           <div className={styles.status}>{apiKey ? '已登录' : '未登录'}</div>
@@ -151,11 +147,7 @@ const UserNode = () => {
         overlayInnerStyle={{ padding: 0 }}
       >
         <div style={{ display: 'inline-block' }}>
-          <Avatar
-            icon={<UserOutlined />}
-            style={{ cursor: 'pointer' }}
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=user"
-          />
+          <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
         </div>
       </Popover>
 
