@@ -5,7 +5,7 @@ const LogoNode = () => {
 
   return (
     <div className={styles.logo}>
-      <span>My Chatgpt</span>
+      <span>Want Chat</span>
     </div>
   )
 }

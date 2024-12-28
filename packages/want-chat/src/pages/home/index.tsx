@@ -19,6 +19,7 @@ import PlaceholderNode from './nodes/placeholder-node'
 import AttachmentsNode from './nodes/attachment-node'
 import SenderHeader from './sender-header'
 import LogoNode from './nodes/logo-node'
+import UserNode from './nodes/user-node'
 
 // ==================== Data ====================
 /**
@@ -54,13 +55,15 @@ const Home: FC = () => {
   // ==================== State ====================
   const [headerOpen, setHeaderOpen] = useState(false)
 
-  const [content, setContent] = useState('')
+  const [inputContent, setInputContent] = useState('')
 
   const [conversationsItems, setConversationsItems] = useState(
     defaultConversationsItems,
   )
 
-  const [activeKey, setActiveKey] = useState(defaultConversationsItems[0].key)
+  const [activeConversationKey, setActiveConversationKey] = useState(
+    defaultConversationsItems[0].key,
+  )
 
   const [attachedFiles, setAttachedFiles] = useState<
     GetProp<typeof Attachments, 'items'>
@@ -68,10 +71,54 @@ const Home: FC = () => {
 
   // ==================== Runtime ====================
   const [agent] = useXAgent({
-    request: async ({ message }, { onSuccess }) => {
-      console.log('message: ', message)
-      // TODO: request to agent
-      onSuccess(`模拟回复: ${message}`)
+    request: async ({ message }, { onUpdate, onSuccess, onError }) => {
+      try {
+        const apiKey = sessionStorage.getItem('apiKey')
+
+        const response = await fetch(`http://localhost:3000/want-chat/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({ message }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const reader = response.body?.getReader()
+        if (!reader) {
+          throw new Error('No reader available')
+        }
+
+        const decoder = new TextDecoder()
+        let currentContent = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+
+          if (done) {
+            onSuccess(currentContent)
+            break
+          }
+
+          const chunk = decoder.decode(value, { stream: true })
+          try {
+            const data = JSON.parse(chunk)
+            if (data.content) {
+              currentContent += data.content
+              onUpdate(currentContent)
+            }
+          } catch (e) {
+            console.warn('Failed to parse chunk:', chunk)
+          }
+        }
+      } catch (error) {
+        console.error('Streaming error:', error)
+        onError(error)
+      }
     },
   })
 
@@ -79,17 +126,19 @@ const Home: FC = () => {
     agent,
   })
 
+  console.warn('messages: ', messages)
+
   useEffect(() => {
-    if (activeKey !== undefined) {
+    if (activeConversationKey !== undefined) {
       setMessages([])
     }
-  }, [activeKey, setMessages])
+  }, [activeConversationKey, setMessages])
 
   // ==================== Event ====================
-  const onSubmit = (nextContent: string) => {
+  const onInputSubmit = (nextContent: string) => {
     if (!nextContent) return
     onRequest(nextContent)
-    setContent('')
+    setInputContent('')
   }
 
   const onPromptsItemClick: GetProp<typeof Prompts, 'onItemClick'> = (info) => {
@@ -108,7 +157,7 @@ const Home: FC = () => {
       },
     ])
     // 定位到最后一个
-    setActiveKey(`${conversationsItems.length}`)
+    setActiveConversationKey(`${conversationsItems.length}`)
   }
 
   /**
@@ -117,7 +166,7 @@ const Home: FC = () => {
   const onConversationClick: GetProp<typeof Conversations, 'onActiveChange'> = (
     key,
   ) => {
-    setActiveKey(key)
+    setActiveConversationKey(key)
   }
 
   /**
@@ -127,7 +176,7 @@ const Home: FC = () => {
     setAttachedFiles(info.fileList)
 
   // ==================== Nodes ====================
-  const items: GetProp<typeof Bubble.List, 'items'> = messages.map(
+  const messageItems: GetProp<typeof Bubble.List, 'items'> = messages.map(
     ({ id, message, status }) => ({
       key: id,
       loading: status === 'loading',
@@ -140,8 +189,17 @@ const Home: FC = () => {
   return (
     <div className={styles.layout}>
       <div className={styles.menu}>
-        {/* 🌟 Logo */}
-        <LogoNode />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0 16px',
+          }}
+        >
+          <LogoNode />
+          <UserNode />
+        </div>
         {/* 🌟 添加会话 */}
         <Button
           onClick={onAddConversation}
@@ -155,7 +213,7 @@ const Home: FC = () => {
         <Conversations
           items={conversationsItems}
           className={styles.conversations}
-          activeKey={activeKey}
+          activeKey={activeConversationKey}
           onActiveChange={onConversationClick}
         />
       </div>
@@ -163,8 +221,8 @@ const Home: FC = () => {
         {/* 🌟 消息列表 */}
         <Bubble.List
           items={
-            items.length > 0
-              ? items
+            messageItems.length > 0
+              ? messageItems
               : [
                   {
                     content: PlaceholderNode({
@@ -182,15 +240,15 @@ const Home: FC = () => {
         <Prompts items={senderPromptsItems} onItemClick={onPromptsItemClick} />
         {/* 🌟 输入框 */}
         <Sender
-          value={content}
+          value={inputContent}
           header={SenderHeader({
             headerOpen,
             setHeaderOpen,
             attachedFiles,
             handleFileChange,
           })}
-          onSubmit={onSubmit}
-          onChange={setContent}
+          onSubmit={onInputSubmit}
+          onChange={setInputContent}
           prefix={AttachmentsNode({ attachedFiles, headerOpen, setHeaderOpen })}
           loading={agent.isRequesting()}
           className={styles.sender}
