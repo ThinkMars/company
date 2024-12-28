@@ -82,14 +82,30 @@ const useStyles = createStyles(({ token, css }) => ({
     font-size: 12px;
     color: ${token.colorTextSecondary};
   `,
+  divider: css`
+    height: 1px;
+    background: ${token.colorBorderSecondary};
+    margin: 8px -16px;
+
+    // 亮色主题
+    [data-theme='light'] & {
+      background: rgba(5, 145, 255, 0.1);
+    }
+
+    // 暗色主题
+    [data-theme='dark'] & {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  `,
 }))
 
 const UserNode = () => {
   const { styles } = useStyles()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const { themeMode, setThemeMode } = useTheme()
-  const [username] = useState(() => `User${Math.floor(Math.random() * 1000)}`) // 随机用户名
+  const [username] = useState(() => `User${Math.floor(Math.random() * 1000)}`)
 
   useEffect(() => {
     const savedKey = sessionStorage.getItem('apiKey')
@@ -110,6 +126,13 @@ const UserNode = () => {
 
   const handleThemeChange = (checked: boolean) => {
     setThemeMode(checked ? 'dark' : 'light')
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('apiKey')
+    setApiKey('')
+    message.success('已退出登录')
+    setIsLogoutModalOpen(false)
   }
 
   const userCard = (
@@ -133,6 +156,18 @@ const UserNode = () => {
             size="small"
           />
         </div>
+        {apiKey && (
+          <>
+            <div className={styles.divider} />
+            <div
+              className={styles.item}
+              onClick={() => setIsLogoutModalOpen(true)}
+              style={{ color: '#FF4D4F' }}
+            >
+              <span>退出登录</span>
+            </div>
+          </>
+        )}
       </div>
     </Card>
   )
@@ -169,6 +204,23 @@ const UserNode = () => {
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
         />
+      </Modal>
+
+      <Modal
+        title="确认退出"
+        open={isLogoutModalOpen}
+        onOk={handleLogout}
+        onCancel={() => setIsLogoutModalOpen(false)}
+        styles={{
+          mask: {
+            backgroundColor: 'rgba(0,0,0,0.45)',
+          },
+        }}
+        okText="确认"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+      >
+        <p>确定要退出登录吗？退出后需要重新设置 API Key。</p>
       </Modal>
     </>
   )

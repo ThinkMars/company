@@ -2,6 +2,7 @@ import {
   Attachments,
   Bubble,
   Conversations,
+  ConversationsProps,
   Prompts,
   Sender,
   useXAgent,
@@ -9,8 +10,8 @@ import {
 } from '@ant-design/x'
 import { useEffect, useState, type FC } from 'react'
 
-import { PlusOutlined, UserOutlined } from '@ant-design/icons'
-import { Button, type GetProp } from 'antd'
+import { PlusOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Button, type GetProp, message, Modal } from 'antd'
 
 import { useStyle } from './use-style'
 import { placeholderPromptsItems } from './placeholder-prompts-items'
@@ -22,15 +23,6 @@ import LogoNode from './nodes/logo-node'
 import UserNode from './nodes/user-node'
 
 // ==================== Data ====================
-/**
- * @description default conversations items, beside the window
- */
-const defaultConversationsItems = [
-  {
-    key: '0',
-    label: '对话',
-  },
-]
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
   assistant: {
@@ -58,6 +50,20 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
   },
 }
 
+// 添加消息类型定义
+interface ChatMessage {
+  id: string
+  message: string
+  status: 'loading' | 'local' | 'success' | 'error'
+}
+
+// 修改会话类型定义
+interface Conversation {
+  key: string
+  label: string
+  messages: ChatMessage[]
+}
+
 const Home: FC = () => {
   // ==================== Style ====================
   const { styles } = useStyle()
@@ -67,13 +73,15 @@ const Home: FC = () => {
 
   const [inputContent, setInputContent] = useState('')
 
-  const [conversationsItems, setConversationsItems] = useState(
-    defaultConversationsItems,
-  )
+  const [conversations, setConversations] = useState<Conversation[]>([
+    {
+      key: '0',
+      label: '默认对话',
+      messages: [],
+    },
+  ])
 
-  const [activeConversationKey, setActiveConversationKey] = useState(
-    defaultConversationsItems[0].key,
-  )
+  const [activeConversationKey, setActiveConversationKey] = useState('0')
 
   const [attachedFiles, setAttachedFiles] = useState<
     GetProp<typeof Attachments, 'items'>
@@ -146,17 +154,34 @@ const Home: FC = () => {
     },
   })
 
+  // 使用 useXChat 时使用当前会话的消息
   const { onRequest, messages, setMessages } = useXChat({
     agent,
   })
 
-  console.warn('messages: ', messages)
-
+  // 修改消息监听逻辑，添加错误处理
   useEffect(() => {
-    if (activeConversationKey !== undefined) {
-      setMessages([])
+    if (messages.length > 0) {
+      try {
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.key === activeConversationKey
+              ? {
+                  ...conv,
+                  messages: messages.map((msg) => ({
+                    id: String(msg.id),
+                    message: msg.message,
+                    status: msg.status,
+                  })),
+                }
+              : conv,
+          ),
+        )
+      } catch (error) {
+        console.error('Failed to update conversation messages:', error)
+      }
     }
-  }, [activeConversationKey, setMessages])
+  }, [messages, activeConversationKey])
 
   // ==================== Event ====================
   const onInputSubmit = (nextContent: string) => {
@@ -173,15 +198,17 @@ const Home: FC = () => {
    * @description 添加会话
    */
   const onAddConversation = () => {
-    setConversationsItems([
-      ...conversationsItems,
+    const newKey = `${conversations.length}`
+    setConversations([
+      ...conversations,
       {
-        key: `${conversationsItems.length}`,
-        label: `新对话 ${conversationsItems.length}`,
+        key: newKey,
+        label: `新对话 ${conversations.length}`,
+        messages: [],
       },
     ])
-    // 定位到最后一个
-    setActiveConversationKey(`${conversationsItems.length}`)
+    setActiveConversationKey(newKey)
+    setMessages([]) // 清空当前显示的消息
   }
 
   /**
@@ -190,7 +217,18 @@ const Home: FC = () => {
   const onConversationClick: GetProp<typeof Conversations, 'onActiveChange'> = (
     key,
   ) => {
-    setActiveConversationKey(key)
+    try {
+      setActiveConversationKey(key)
+      const targetConvMessages =
+        conversations.find((conv) => conv.key === key)?.messages ?? []
+      setMessages(targetConvMessages)
+    } catch (error) {
+      console.error('Failed to switch conversation:', error)
+      Modal.error({
+        title: '切换失败',
+        content: '切换会话时发生错误，请稍后重试。',
+      })
+    }
   }
 
   /**
@@ -198,6 +236,31 @@ const Home: FC = () => {
    */
   const handleFileChange: GetProp<typeof Attachments, 'onChange'> = (info) =>
     setAttachedFiles(info.fileList)
+
+  /**
+   * @description 删除会话
+   */
+  const handleDeleteConversation = (key: string) => {
+    if (key === '0') return // 不允许删除第一个对话
+
+    try {
+      setConversations((prev) => prev.filter((conv) => conv.key !== key))
+
+      // 如果删除的是当前对话，切换到第一个对话
+      if (key === activeConversationKey) {
+        setActiveConversationKey('0')
+        const firstConvMessages =
+          conversations.find((conv) => conv.key === '0')?.messages ?? []
+        setMessages(firstConvMessages)
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error)
+      Modal.error({
+        title: '删除失败',
+        content: '删除会话时发生错误，请稍后重试。',
+      })
+    }
+  }
 
   // ==================== Nodes ====================
   const messageItems: GetProp<typeof Bubble.List, 'items'> = messages.map(
@@ -208,6 +271,39 @@ const Home: FC = () => {
       content: message,
     }),
   )
+
+  // 修改会话列表项的渲染
+  const conversationsItems = conversations.map((conv) => ({
+    key: conv.key,
+    label: conv.label,
+  }))
+
+  // action menu
+  const menuConfig: ConversationsProps['menu'] = (conversation) => ({
+    items: [
+      {
+        label: conversation.label,
+        key: conversation.key,
+        icon: <DeleteOutlined />,
+        danger: true,
+      },
+    ],
+    onClick: (menuInfo) => {
+      if (menuInfo.key === '0') {
+        message.warning('默认对话无法删除')
+        return
+      }
+
+      Modal.confirm({
+        title: '确认删除',
+        content: '确定要删除这个对话吗？删除后无法恢复。',
+        okText: '确认',
+        cancelText: '取消',
+        okButtonProps: { danger: true },
+        onOk: () => handleDeleteConversation(menuInfo.key),
+      })
+    },
+  })
 
   // ==================== Render =================
   return (
@@ -223,6 +319,7 @@ const Home: FC = () => {
           新建会话
         </Button>
         <Conversations
+          menu={menuConfig}
           items={conversationsItems}
           className={styles.conversations}
           activeKey={activeConversationKey}
