@@ -1,10 +1,8 @@
 import {
-  Attachments,
   Bubble,
   BubbleProps,
   Conversations,
   ConversationsProps,
-  Prompts,
   Sender,
   useXAgent,
   useXChat,
@@ -14,19 +12,12 @@ import { useEffect, useState, type FC, useRef } from 'react'
 import { PlusOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Button, type GetProp, message, Modal, Typography } from 'antd'
 
-import markdownit from 'markdown-it'
+import { useStyle } from '../../../hooks/use-style'
+import PlaceholderNode from '../components/welcome-node'
+import LogoNode from '../components/logo-node'
+import UserNode from '../components/user-card'
+import markdownRender from '../components/markdown-render'
 
-import { useStyle } from './use-style'
-import { placeholderPromptsItems } from './placeholder-prompts-items'
-import { senderPromptsItems } from './sender-prompts-items'
-import PlaceholderNode from './nodes/placeholder-node'
-import AttachmentsNode from './nodes/attachment-node'
-import SenderHeader from './sender-header'
-import LogoNode from './nodes/logo-node'
-import UserNode from './nodes/user-node'
-
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-const md = markdownit({ html: true, breaks: true })
 // ==================== Data ====================
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
@@ -74,7 +65,6 @@ const Home: FC = () => {
   const { styles } = useStyle()
 
   // ==================== State ====================
-  const [headerOpen, setHeaderOpen] = useState(false)
   const [isRequesting, setRequesting] = useState(false)
 
   const [inputContent, setInputContent] = useState('')
@@ -88,10 +78,6 @@ const Home: FC = () => {
   ])
 
   const [activeConversationKey, setActiveConversationKey] = useState('0')
-
-  const [attachedFiles, setAttachedFiles] = useState<
-    GetProp<typeof Attachments, 'items'>
-  >([])
 
   // ==================== Runtime ====================
   const abortController = useRef<AbortController | null>(null)
@@ -236,10 +222,6 @@ const Home: FC = () => {
     setRequesting(false)
   }
 
-  const onPromptsItemClick: GetProp<typeof Prompts, 'onItemClick'> = (info) => {
-    onRequest(info.data.description as string)
-  }
-
   /**
    * @description 添加会话
    */
@@ -278,12 +260,6 @@ const Home: FC = () => {
   }
 
   /**
-   * @description 附件
-   */
-  const handleFileChange: GetProp<typeof Attachments, 'onChange'> = (info) =>
-    setAttachedFiles(info.fileList)
-
-  /**
    * @description 删除会话
    */
   const handleDeleteConversation = (key: string) => {
@@ -308,12 +284,6 @@ const Home: FC = () => {
     }
   }
 
-  const renderMarkdown: BubbleProps['messageRender'] = (content) => (
-    <Typography>
-      <div dangerouslySetInnerHTML={{ __html: md.render(content) }} />
-    </Typography>
-  )
-
   // ==================== Nodes ====================
   const messageItems: GetProp<typeof Bubble.List, 'items'> = messages.map(
     ({ id, message, status }) => ({
@@ -323,7 +293,7 @@ const Home: FC = () => {
       content: message,
       // although it's not a real typing, but it's a good way to show the loading state
       typing: { step: 2, interval: 50, suffix: <>💗</> },
-      messageRender: renderMarkdown,
+      messageRender: markdownRender,
     }),
   )
 
@@ -392,10 +362,7 @@ const Home: FC = () => {
                 ? messageItems
                 : [
                     {
-                      content: PlaceholderNode({
-                        placeholderPromptsItems,
-                        onPromptsItemClick,
-                      }),
+                      content: PlaceholderNode(),
                       variant: 'borderless',
                     },
                   ]
@@ -403,26 +370,11 @@ const Home: FC = () => {
             roles={roles}
             className={styles.messages}
           />
-          <Prompts
-            items={senderPromptsItems}
-            onItemClick={onPromptsItemClick}
-          />
           <Sender
             value={inputContent}
-            header={SenderHeader({
-              headerOpen,
-              setHeaderOpen,
-              attachedFiles,
-              handleFileChange,
-            })}
             onSubmit={onInputSubmit}
             onCancel={onInputCancel}
             onChange={setInputContent}
-            prefix={AttachmentsNode({
-              attachedFiles,
-              headerOpen,
-              setHeaderOpen,
-            })}
             loading={isRequesting}
             className={styles.sender}
           />

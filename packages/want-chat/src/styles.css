@@ -18,3 +18,39 @@ body {
     background-color: #141414;
   }
 }
+
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.markdown-body p {
+  margin: 8px 0;
+}
+
+.markdown-body pre {
+  margin: 16px 0;
+}
+
+.markdown-body code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
+    monospace;
+}
+
+/* 非代码块中的行内代码样式 */
+.markdown-body :not(pre) > code {
+  padding: 2px 4px;
+  font-size: 90%;
+  color: #c7254e;
+  background-color: #f9f2f4;
+  border-radius: 4px;
+}
+
+/* 代码块中的代码样式保持highlight.js的样式 */
+.markdown-body pre > code {
+  padding: 0;
+  font-size: 14px;
+  color: inherit;
+  background-color: transparent;
+  border-radius: 0;
+}
