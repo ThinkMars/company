@@ -131,6 +131,9 @@ importers:
       antd-style:
         specifier: ^3.7.1
         version: 3.7.1(@types/react@18.3.16)(antd@5.22.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      highlight.js:
+        specifier: ^11.11.1
+        version: 11.11.1
       markdown-it:
         specifier: ^14.1.0
         version: 14.1.0
@@ -4246,6 +4249,13 @@ packages:
         integrity: sha512-QFLV0taWQOZtvIRIAdBChesmogZrtuXvVWsFHZTk2SU+anspqZ2vMnoLg7IE1+Uk16N19APic1BuF8bC8c2m5g==,
       }
     engines: { node: '>=8' }
+
+  highlight.js@11.11.1:
+    resolution:
+      {
+        integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==,
+      }
+    engines: { node: '>=12.0.0' }
 
   hoist-non-react-statics@3.3.2:
     resolution:
@@ -9994,6 +10004,8 @@ snapshots:
   he@1.2.0: {}
 
   hexoid@1.0.0: {}
+
+  highlight.js@11.11.1: {}
 
   hoist-non-react-statics@3.3.2:
     dependencies:

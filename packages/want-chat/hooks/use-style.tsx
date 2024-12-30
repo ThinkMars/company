@@ -100,6 +100,16 @@ export const useStyle = createStyles(({ token, css }) => ({
     flex: 1;
     max-width: 100%;
     overflow-y: auto;
+    scroll-behavior: smooth;
+
+    /* 隐藏默认滚动条 */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Firefox隐藏滚动条 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 
     .ant-x-bubble {
       max-width: 88%;
