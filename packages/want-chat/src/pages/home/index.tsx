@@ -1,6 +1,5 @@
 import {
   Bubble,
-  BubbleProps,
   Conversations,
   ConversationsProps,
   Sender,
@@ -10,7 +9,7 @@ import {
 import { useEffect, useState, type FC, useRef } from 'react'
 
 import { PlusOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Button, type GetProp, message, Modal, Typography } from 'antd'
+import { Button, type GetProp, message, Modal } from 'antd'
 
 import { useStyle } from '../../../hooks/use-style'
 import PlaceholderNode from '../components/welcome-node'
@@ -18,8 +17,20 @@ import LogoNode from '../components/logo-node'
 import UserNode from '../components/user-card'
 import markdownRender from '../components/markdown-render'
 
-// ==================== Data ====================
+// 添加消息类型定义
+interface ChatMessage {
+  id: string
+  message: string
+  status: 'loading' | 'local' | 'success' | 'error'
+}
 
+// 修改会话类型定义
+interface Conversation {
+  key: string
+  label: string
+  messages: ChatMessage[]
+}
+// ==================== Data ====================
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
   assistant: {
     placement: 'start',
@@ -44,20 +55,6 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
       size: 'large',
     },
   },
-}
-
-// 添加消息类型定义
-interface ChatMessage {
-  id: string
-  message: string
-  status: 'loading' | 'local' | 'success' | 'error'
-}
-
-// 修改会话类型定义
-interface Conversation {
-  key: string
-  label: string
-  messages: ChatMessage[]
 }
 
 const Home: FC = () => {
@@ -147,7 +144,7 @@ const Home: FC = () => {
             // 递归处理下一个数据块
             await processChunk()
           } catch (error) {
-            if (error.name === 'AbortError') {
+            if (error instanceof Error && error.name === 'AbortError') {
               reader.releaseLock()
               return
             }
@@ -157,7 +154,7 @@ const Home: FC = () => {
 
         await processChunk()
       } catch (error) {
-        if (error.name === 'AbortError') {
+        if (error instanceof Error && error.name === 'AbortError') {
           console.log('Request aborted')
           return
         }

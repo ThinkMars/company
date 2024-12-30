@@ -4,6 +4,7 @@ import { createStyles } from 'antd-style'
 import { CopyOutlined } from '@ant-design/icons'
 
 import markdownit from 'markdown-it'
+import type MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 
@@ -38,12 +39,12 @@ const useStyles = createStyles(({ token, css }) => ({
   `,
 }))
 
-const md = markdownit({
+const md: MarkdownIt = markdownit({
   html: true,
   linkify: true,
   typographer: true,
   breaks: true,
-  highlight: function (str, lang) {
+  highlight: (str, lang) => {
     if (lang && hljs.getLanguage(lang)) {
       try {
         const highlighted = hljs.highlight(str, { language: lang }).value
