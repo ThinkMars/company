@@ -5,6 +5,10 @@ import vue from 'rollup-plugin-vue'
 import dts from 'rollup-plugin-dts'
 import postcss from 'rollup-plugin-postcss'
 import typescript from 'rollup-plugin-typescript2'
+import babel from '@rollup/plugin-babel'
+
+// 排除测试相关文件
+const excludeFiles = ['**/__tests__/**']
 
 export default defineConfig([
   {
@@ -21,7 +25,7 @@ export default defineConfig([
         sourcemap: true,
       },
     ],
-    external: ['vue'],
+    external: ['vue', 'react', 'react-dom'],
     plugins: [
       vue(),
       postcss({
@@ -36,15 +40,26 @@ export default defineConfig([
             module: 'ESNext', // 重要：确保 Rollup 可以处理模块
             target: 'es6', // 或者你需要的其他目标
           },
+          exclude: excludeFiles,
         },
       }),
       resolve(),
       commonjs(),
+      babel({
+        babelHelpers: 'bundled',
+        presets: ['@babel/preset-react'],
+        extensions: ['.ts', '.tsx'],
+        exclude: excludeFiles,
+      }),
     ],
   },
   {
     input: 'dist/index.d.ts',
     output: [{ file: 'dist/index.d.ts', format: 'es' }],
-    plugins: [dts()],
+    plugins: [
+      dts({
+        exclude: excludeFiles,
+      }),
+    ],
   },
 ])

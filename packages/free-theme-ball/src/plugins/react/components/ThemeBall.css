@@ -1,0 +1,17 @@
+.theme-ball {
+  position: fixed;
+  z-index: 9999;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.theme-ball.hidden {
+  opacity: 0.3;
+  transform: translateX(36px);
+}
+
+.theme-ball.hidden:hover {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ... 其他样式与 Vue 版本相同 ... */

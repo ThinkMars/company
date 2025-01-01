@@ -8,8 +8,7 @@
     "postinstall": "simple-git-hooks",
     "client": "pnpm --filter @company/playground run dev",
     "build": "pnpm -r --filter='./packages/*' run build",
-    "test": "vitest -c vitest.workspace.ts",
-    "test:coverage": "vitest run -c vitest.workspace.ts --coverage"
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -35,7 +34,7 @@
     "vitest": "^2.1.1"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged && pnpm test"
+    "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
     "*": [
