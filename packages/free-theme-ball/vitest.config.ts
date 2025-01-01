@@ -5,11 +5,14 @@ export default defineConfig({
   plugins: [
     vue({
       target: 'browser',
-      css: true,
       preprocessStyles: true,
     }),
   ],
   test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+    },
     environment: 'jsdom',
     globals: true,
     include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}'],

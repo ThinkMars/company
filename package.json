@@ -6,11 +6,9 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "simple-git-hooks",
-    "server": "pnpm --filter @company/nest-server run start:dev",
     "client": "pnpm --filter @company/playground run dev",
     "build": "pnpm -r --filter='./packages/*' run build",
-    "test": "vitest -c vitest.workspace.ts",
-    "test:coverage": "vitest run -c vitest.workspace.ts --coverage"
+    "test": "vitest"
   },
   "repository": {
     "type": "git",

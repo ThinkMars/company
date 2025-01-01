@@ -1,8 +1,4 @@
-import {
-  createRouter,
-  createWebHistory,
-  createWebHashHistory,
-} from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
@@ -15,10 +11,15 @@ const routes = [
     name: 'About',
     component: () => import('@/views/about.vue'),
   },
+  {
+    path: '/change-theme',
+    name: 'ChangeTheme',
+    component: () => import('@/views/change-theme.vue'),
+  },
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes,
 })
 
