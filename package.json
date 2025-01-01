@@ -6,7 +6,6 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "postinstall": "simple-git-hooks",
-    "server": "pnpm --filter @company/nest-server run start:dev",
     "client": "pnpm --filter @company/playground run dev",
     "build": "pnpm -r --filter='./packages/*' run build",
     "test": "vitest -c vitest.workspace.ts",
@@ -36,7 +35,7 @@
     "vitest": "^2.1.1"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged"
+    "pre-commit": "pnpm lint-staged && pnpm test"
   },
   "lint-staged": {
     "*": [

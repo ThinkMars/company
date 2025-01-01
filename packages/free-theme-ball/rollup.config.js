@@ -11,7 +11,7 @@ export default defineConfig([
     input: 'src/index.ts',
     output: [
       {
-        file: 'dist/index.js',
+        file: 'dist/index.cjs',
         format: 'cjs',
         sourcemap: true,
       },
@@ -21,7 +21,7 @@ export default defineConfig([
         sourcemap: true,
       },
     ],
-    external: ['vue', 'color'],
+    external: ['vue'],
     plugins: [
       vue(),
       postcss({

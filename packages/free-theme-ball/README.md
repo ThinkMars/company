@@ -83,19 +83,6 @@ class ThemeModifier {
 }
 ```
 
-### Vue 组件
-
-```vue
-<!-- 直接使用组件 -->
-<template>
-  <ThemeBall />
-</template>
-
-<script setup>
-import { ThemeBall } from 'free-theme-ball'
-</script>
-```
-
 ## 浏览器支持
 
 - Chrome >= 49

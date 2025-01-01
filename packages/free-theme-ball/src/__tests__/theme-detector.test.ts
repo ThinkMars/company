@@ -1,66 +1,55 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { ThemeDetector } from '../index'
+import { describe, it, expect } from 'vitest'
+import { ThemeDetector } from '../core/theme-detector'
 
 describe('ThemeDetector', () => {
-  let detector: ThemeDetector
+  it('应该能检测到 CSS 变量', () => {
+    document.documentElement.style.setProperty('--test-var1', '#ff0000')
+    document.documentElement.style.setProperty('--test-var2', '16px')
 
-  beforeEach(() => {
-    detector = new ThemeDetector()
-    const style = document.createElement('style')
-    style.textContent = `
-      :root {
-        --el-color-primary: #409EFF;
-        --el-text-color: #303133;
-        --el-font-size: 14px;
-        --custom-color: #ff0000;
-      }
-    `
-    document.head.appendChild(style)
-  })
-
-  afterEach(() => {
-    // 清理添加的样式
-    const style = document.head.querySelector('style')
-    if (style) {
-      document.head.removeChild(style)
-    }
-  })
-
-  it('应该能检测所有CSS变量', () => {
+    const detector = new ThemeDetector()
     const variables = detector.detectVariables()
 
-    expect(variables).toContainEqual(
-      expect.objectContaining({
-        name: '--el-color-primary',
-        value: '#409EFF',
-        type: 'color',
-      }),
-    )
+    document.documentElement.style.removeProperty('--test-var1')
+    document.documentElement.style.removeProperty('--test-var2')
 
-    expect(variables).toContainEqual(
-      expect.objectContaining({
-        name: '--el-font-size',
-        value: '14px',
-        type: 'other',
-      }),
-    )
+    expect(variables.length).toBeGreaterThan(0)
+    expect(variables.some((v) => v.name === '--test-var1')).toBe(true)
+    expect(variables.some((v) => v.name === '--test-var2')).toBe(true)
   })
 
-  it('应该能正确筛选Element Plus变量', () => {
-    detector.detectVariables()
-    const elVariables = detector.detectElementPlusVariables()
+  it('应该能正确识别颜色变量', () => {
+    document.documentElement.style.setProperty('--test-color', '#ff0000')
+    document.documentElement.style.setProperty('--test-other', '12px')
 
-    expect(elVariables.every((v) => v.name.startsWith('--el-'))).toBe(true)
-    expect(elVariables).toContainEqual(
-      expect.objectContaining({
-        name: '--el-color-primary',
-        value: '#409EFF',
-      }),
-    )
-    expect(elVariables).not.toContainEqual(
-      expect.objectContaining({
-        name: '--custom-color',
-      }),
-    )
+    const detector = new ThemeDetector()
+    const variables = detector.detectVariables()
+
+    const colorVar = variables.find((v) => v.name === '--test-color')
+    const otherVar = variables.find((v) => v.name === '--test-other')
+
+    document.documentElement.style.removeProperty('--test-color')
+    document.documentElement.style.removeProperty('--test-other')
+
+    expect(colorVar?.type).toBe('color')
+    expect(otherVar?.type).toBe('other')
+  })
+
+  it('应该能检测到 Element Plus 变量', () => {
+    const detector = new ThemeDetector('--el-')
+    document.documentElement.style.setProperty('--el-color-primary', '#409EFF')
+    document.documentElement.style.setProperty('--el-font-size', '14px')
+    document.documentElement.style.setProperty('--other-var', '#fff')
+
+    const variables = detector.detectVariables()
+    const elVariables = detector.detectThemeVariables()
+
+    document.documentElement.style.removeProperty('--el-color-primary')
+    document.documentElement.style.removeProperty('--el-font-size')
+    document.documentElement.style.removeProperty('--other-var')
+
+    expect(
+      elVariables.every((v: { name: string }) => v.name.startsWith('--el-')),
+    ).toBe(true)
+    expect(elVariables.length).toBeLessThan(variables.length)
   })
 })

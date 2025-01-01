@@ -9,8 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@company/free-theme-ball": "workspace:^",
     "@company/web-metrics": "workspace:^",
+    "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.7.7",
+    "element-plus": "^2.9.1",
     "vue": "^3.4.37",
     "vue-router": "^4.4.5"
   },

@@ -1,14 +1,28 @@
 import { createApp } from 'vue'
-import './style.css'
 import App from './App.vue'
 import router from '@/router/index'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { createMonitor } from '@company/web-metrics'
+import { VueThemeBallPlugin } from '@company/free-theme-ball'
+
+const app = createApp(App)
+
+// 注册所有图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
+
 createMonitor({
   projectId: '1234567890',
   debug: true,
-  serverUrl: 'http://localhost:3000/track', // your server url
-  // useImg: true,
+  serverUrl: 'http://localhost:3000/track',
 })
-const app = createApp(App)
+
+// 初始化主题球
+app.use(VueThemeBallPlugin)
+
+app.use(ElementPlus)
 app.use(router)
 app.mount('#app')
