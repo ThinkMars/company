@@ -9,7 +9,8 @@
     "server": "pnpm --filter @company/nest-server run start:dev",
     "client": "pnpm --filter @company/playground run dev",
     "build": "pnpm -r --filter='./packages/*' run build",
-    "test": "vitest"
+    "test": "vitest -c vitest.workspace.ts",
+    "test:coverage": "vitest run -c vitest.workspace.ts --coverage"
   },
   "repository": {
     "type": "git",
