@@ -10,7 +10,7 @@ interface ThemeBallProps {
   offset?: number
 }
 
-export const ThemeBall: React.FC<ThemeBallProps> = ({
+export const ReactThemeBall: React.FC<ThemeBallProps> = ({
   initialColor = '#409EFF',
   position = 'right',
   offset = 20,

@@ -1,1 +1,1 @@
-export { ThemeBall } from './components/ThemeBall'
+export { ReactThemeBall } from './components/ThemeBall'

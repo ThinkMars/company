@@ -3,38 +3,38 @@ import type { ThemeBallOptions } from '../../core/types'
 import { ThemeModifier } from '../../core/theme-modifier'
 import ThemeBall from './components/ThemeBall.vue'
 
-export const ThemeBallPlugin = {
-  install(app: App, options: ThemeBallOptions = {}) {
-    const {
-      prefix = '--el-',
-      initialColor = '#409EFF',
-      position = 'right',
-      offset = 20,
-    } = options
+const ThemeBallPlugin = (app: App, options: ThemeBallOptions = {}) => {
+  const {
+    prefix = '--el-',
+    initialColor = '#409EFF',
+    position = 'right',
+    offset = 20,
+  } = options
 
-    // 设置主题前缀
-    ThemeModifier.setPrefix(prefix)
+  app.component('ThemeBall', ThemeBall)
 
-    // 创建主题球实例
-    const mountThemeBall = () => {
-      const themeBallDiv = document.createElement('div')
-      document.body.appendChild(themeBallDiv)
+  // 设置主题前缀
+  ThemeModifier.setPrefix(prefix)
 
-      const themeBallInstance = createApp(ThemeBall, {
-        initialColor,
-        position,
-        offset,
-        prefix,
-      })
-      themeBallInstance.mount(themeBallDiv)
-    }
+  // 创建主题球实例
+  const mountThemeBall = () => {
+    const themeBallDiv = document.createElement('div')
+    document.body.appendChild(themeBallDiv)
 
-    if (document.readyState === 'complete') {
-      mountThemeBall()
-    } else {
-      window.addEventListener('load', mountThemeBall)
-    }
-  },
+    const themeBallInstance = createApp(ThemeBall, {
+      initialColor,
+      position,
+      offset,
+      prefix,
+    })
+    themeBallInstance.mount(themeBallDiv)
+  }
+
+  if (document.readyState === 'complete') {
+    mountThemeBall()
+  } else {
+    window.addEventListener('load', mountThemeBall)
+  }
 }
 
-export default ThemeBallPlugin
+export { ThemeBallPlugin, ThemeBall }
