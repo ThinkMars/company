@@ -2,6 +2,7 @@ import { type App, createApp } from 'vue'
 import type { ThemeBallOptions } from '../../core/types'
 import { ThemeModifier } from '../../core/theme-modifier'
 import ThemeBall from './components/ThemeBall.vue'
+import ThemePanel from './components/ThemePanel.vue'
 
 const ThemeBallPlugin = (app: App, options: ThemeBallOptions = {}) => {
   const {
@@ -11,23 +12,21 @@ const ThemeBallPlugin = (app: App, options: ThemeBallOptions = {}) => {
     offset = 20,
   } = options
 
-  app.component('ThemeBall', ThemeBall)
-
   // 设置主题前缀
   ThemeModifier.setPrefix(prefix)
 
-  // 创建主题球实例
+  // 创建并挂载主题球
   const mountThemeBall = () => {
-    const themeBallDiv = document.createElement('div')
-    document.body.appendChild(themeBallDiv)
+    const container = document.createElement('div')
+    container.id = 'theme-ball-container'
+    document.body.appendChild(container)
 
-    const themeBallInstance = createApp(ThemeBall, {
+    const themeBall = createApp(ThemeBall, {
       initialColor,
       position,
       offset,
-      prefix,
     })
-    themeBallInstance.mount(themeBallDiv)
+    themeBall.mount(container)
   }
 
   if (document.readyState === 'complete') {
@@ -35,6 +34,10 @@ const ThemeBallPlugin = (app: App, options: ThemeBallOptions = {}) => {
   } else {
     window.addEventListener('load', mountThemeBall)
   }
+
+  // 注册全局组件
+  app.component('VueThemeBall', ThemeBall)
+  app.component('VueThemePanel', ThemePanel)
 }
 
-export { ThemeBallPlugin, ThemeBall }
+export { ThemeBallPlugin, ThemeBall, ThemePanel }

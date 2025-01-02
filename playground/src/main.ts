@@ -20,8 +20,12 @@ createMonitor({
   serverUrl: 'http://localhost:3000/track',
 })
 
-// 初始化主题球
-app.use(VueThemeBallPlugin)
+// 使用主题球插件
+app.use(VueThemeBallPlugin, {
+  initialColor: '#409EFF', // 可选，默认主题色
+  position: 'right', // 可选，悬浮球位置，'left' | 'right'
+  offset: 20, // 可选，距离边缘的偏移量
+})
 
 app.use(ElementPlus)
 app.use(router)

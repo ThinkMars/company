@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Free Theme Extension",
+  "name": "自由主题预览",
   "version": "1.0.0",
-  "description": "A magic extension for adjust your theme realtime",
-  "permissions": ["activeTab", "scripting"],
+  "description": "为使用 Element Plus 的网站提供实时主题预览",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "index.html",
     "default_icon": {
@@ -14,9 +15,9 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*/*"],
+      "matches": ["<all_urls>"],
       "js": ["content-script.ts"],
-      "css": ["content-style.css"]
+      "run_at": "document_end"
     }
   ],
   "background": {
