@@ -2,99 +2,61 @@
   <div
     class="theme-ball"
     :class="{ active: isOpen, hidden: isHidden }"
-    :style="{ top: position.y + 'px', right: position.x + 'px' }"
+    :style="ballStyle"
     @mouseenter="handleMouseEnter"
     @mouseleave="startHideTimer"
   >
-    <div
-      class="ball"
-      @mousedown.stop="startDrag"
-      :class="{ dragging: isDragging }"
-    >
+    <div class="ball" :class="{ dragging: isDragging }" @mousedown="startDrag">
       <div class="ball-inner" :style="{ backgroundColor: currentColor }">
         <div class="ball-glow" :style="{ backgroundColor: currentColor }">
-          <div
-            class="ball-pulse"
-            :style="{ backgroundColor: currentColor }"
-          ></div>
+          <div class="ball-pulse" :style="{ backgroundColor: currentColor }" />
         </div>
       </div>
     </div>
-    <div v-show="isOpen" class="theme-panel">
-      <div class="panel-header">
-        <h3>超级主题球</h3>
-        <button class="close-btn" @click="isOpen = false">×</button>
-      </div>
-      <div class="panel-content">
-        <div class="preset-colors">
-          <h4>推荐主题</h4>
-          <div class="themes-container">
-            <div class="themes-column">
-              <div
-                class="color-category"
-                v-for="category in leftThemes"
-                :key="category.name"
-              >
-                <div class="category-name">{{ category.name }}</div>
-                <div class="color-list">
-                  <div
-                    v-for="color in category.colors"
-                    :key="color.value"
-                    class="color-item"
-                    :style="{ backgroundColor: color.value }"
-                    :title="color.name"
-                    @click="selectPresetColor(color.value)"
-                  ></div>
-                </div>
-              </div>
-            </div>
-            <div class="themes-column">
-              <div
-                class="color-category"
-                v-for="category in rightThemes"
-                :key="category.name"
-              >
-                <div class="category-name">{{ category.name }}</div>
-                <div class="color-list">
-                  <div
-                    v-for="color in category.colors"
-                    :key="color.value"
-                    class="color-item"
-                    :style="{ backgroundColor: color.value }"
-                    :title="color.name"
-                    @click="selectPresetColor(color.value)"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="divider">或</div>
-        <div class="color-picker">
-          <label>自定义主题色</label>
-          <input type="color" v-model="currentColor" @input="updateTheme" />
-        </div>
-      </div>
-    </div>
+
+    <ThemePanel
+      v-if="isOpen"
+      v-model:currentColor="currentColor"
+      closeable
+      @close="isOpen = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ThemeDetector } from '../../../core/theme-detector'
 import { ThemeModifier } from '../../../core/theme-modifier'
-import { leftThemes, rightThemes } from '../../../constants/preset-themes'
+import ThemePanel from './ThemePanel.vue'
+
+const props = withDefaults(
+  defineProps<{
+    initialColor?: string
+    position?: 'left' | 'right'
+    offset?: number
+  }>(),
+  {
+    initialColor: '#409EFF',
+    position: 'right',
+    offset: 20,
+  },
+)
 
 const isOpen = ref(false)
 const isHidden = ref(false)
 const isDragging = ref(false)
-const currentColor = ref('#409EFF')
+const currentColor = ref(props.initialColor)
 const hideTimer = ref<number | null>(null)
 const position = ref({
   y: window.innerHeight / 2,
-  x: 20, // 默认右侧距离
+  x: props.offset,
 })
 const detector = new ThemeDetector()
+
+const ballStyle = computed(() => ({
+  top: `${position.value.y}px`,
+  [props.position]: `${position.value.x}px`,
+}))
 
 let startY = 0
 let startX = 0
@@ -195,7 +157,7 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
 })
 
-onUnmounted(cleanup)
+onBeforeUnmount(cleanup)
 
 const togglePanel = () => {
   isOpen.value = !isOpen.value
