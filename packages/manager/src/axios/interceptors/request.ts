@@ -1,5 +1,5 @@
 import type { InternalAxiosRequestConfig } from 'axios'
-import { useUserStore } from '@/store/user'
+import { useUserStore } from '@/pinia/user'
 
 export const requestInterceptor = (config: InternalAxiosRequestConfig) => {
   console.log(config)

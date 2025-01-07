@@ -1,8 +1,12 @@
 import request from '@/axios/request'
+import type {
+  CaptchaResponse,
+  LoginResponse,
+} from './interface/login.interface'
 
 // 获取验证码
 export function getCaptcha() {
-  return request({
+  return request<any, CaptchaResponse>({
     url: '/admin/captcha',
     method: 'get',
   })
@@ -10,7 +14,7 @@ export function getCaptcha() {
 
 // 登录
 export function login(data: any) {
-  return request({
+  return request<any, LoginResponse>({
     url: '/admin/login',
     method: 'post',
     data,

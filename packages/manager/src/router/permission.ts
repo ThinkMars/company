@@ -1,6 +1,6 @@
 import router from '@/router'
-import { useUserStore } from '@/store/user'
-import { usePermissionStore } from '@/store/permission'
+import { useUserStore } from '@/pinia/user'
+import { usePermissionStore } from '@/pinia/permission'
 
 // 白名单路由
 const whiteList = ['/login', '/status/401', '/status/404']

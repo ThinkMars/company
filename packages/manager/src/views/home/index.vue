@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { User, Lock, Key, Setting } from '@element-plus/icons-vue'
 
 const cardList = ref([
   {
@@ -10,13 +9,13 @@ const cardList = ref([
     type: 'success',
   },
   {
-    title: '角色总数',
+    title: '访问量',
     value: '12',
     icon: 'Lock',
     type: 'warning',
   },
   {
-    title: '权限总数',
+    title: '访问量',
     value: '56',
     icon: 'Key',
     type: 'danger',

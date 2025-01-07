@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { useLoadingStore } from '@/store/loading'
+import { useLoadingStore } from '@/pinia/loading'
 
 const loadingStore = useLoadingStore()
 const { isLoading } = storeToRefs(loadingStore)

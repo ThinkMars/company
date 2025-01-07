@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/store/user'
-import { usePermissionStore } from '@/store/permission'
+import { useUserStore } from '@/pinia/user'
+import { usePermissionStore } from '@/pinia/permission'
 
 const route = useRoute()
 const router = useRouter()

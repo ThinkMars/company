@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-ignore
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import GlobalLoading from '@/components/GlobalLoading/index.vue'
 </script>

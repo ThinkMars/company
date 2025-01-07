@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock, Key } from '@element-plus/icons-vue'
-import { useUserStore } from '@/store/user'
+import { useUserStore } from '@/pinia/user'
 import type { FormInstance } from 'element-plus'
 import { getCaptcha, login, register } from '@/api/login'
 
@@ -10,11 +10,37 @@ const router = useRouter()
 const userStore = useUserStore()
 const captchaImg = ref('') // 验证码图片base64数据
 
-const activeTab = ref('login')
 const loading = ref(false)
 const registerLoading = ref(false)
 const loginFormRef = ref<FormInstance>()
 const registerFormRef = ref<FormInstance>()
+
+const isFlipped = ref(false)
+const isRotating = ref(false)
+const isFlipping = ref(false)
+
+const toggleFlip = () => {
+  if (isRotating.value || isFlipping.value) return
+
+  // 第一阶段：旋转变形动画
+  isRotating.value = true
+  setTimeout(() => {
+    isRotating.value = false
+    // 第二阶段：开始翻转动画
+    isFlipping.value = true
+    isFlipped.value = !isFlipped.value
+
+    // 翻转动画结束后重置状态
+    setTimeout(() => {
+      isFlipping.value = false
+    }, 800)
+  }, 1000) // 旋转变形动画持续1秒
+}
+
+const handleRegisterSuccess = () => {
+  ElMessage.success('注册成功')
+  isFlipped.value = false
+}
 
 // 初始化时加载验证码
 const initCaptcha = () => {
@@ -71,8 +97,8 @@ const handleLogin = async () => {
       try {
         // 调用登录接口
         const res = await login(loginForm)
-        userStore.setToken(res.access_token)
-        userStore.setUserInfo(res.userInfo)
+        userStore.setToken(res.access_token || '')
+        userStore.setUserInfo(res.userInfo || '')
         router.replace('/')
       } catch (error) {
         console.error(error)
@@ -129,8 +155,9 @@ const handleRegister = async () => {
       try {
         // 调用注册接口
         const res = await register(registerForm)
-        ElMessage.success('注册成功')
-        activeTab.value = 'login'
+        if (res) {
+          handleRegisterSuccess()
+        }
       } catch (error) {
         console.error(error)
         // 验证码错误时刷新验证码
@@ -145,10 +172,18 @@ const handleRegister = async () => {
 
 <template>
   <div class="login-container">
-    <div class="login-box">
-      <h2 class="title">管理后台</h2>
-      <el-tabs v-model="activeTab">
-        <el-tab-pane label="登录" name="login">
+    <div
+      class="flip-container"
+      :class="{
+        'is-flipped': isFlipped && !isRotating,
+        'is-rotating': isRotating,
+        'is-flipping': isFlipping,
+      }"
+    >
+      <!-- 登录卡片面 -->
+      <div class="card-front">
+        <div class="login-box">
+          <h2 class="title">Company 管理后台</h2>
           <el-form
             ref="loginFormRef"
             :model="loginForm"
@@ -212,9 +247,17 @@ const handleRegister = async () => {
               </el-button>
             </el-form-item>
           </el-form>
-        </el-tab-pane>
+          <div class="card-switch">
+            还没有账号？
+            <a @click="toggleFlip">注册</a>
+          </div>
+        </div>
+      </div>
 
-        <el-tab-pane label="注册" name="register">
+      <!-- 注册卡片面 -->
+      <div class="card-back">
+        <div class="login-box">
+          <h2 class="title">用户注册</h2>
           <el-form
             ref="registerFormRef"
             :model="registerForm"
@@ -297,8 +340,12 @@ const handleRegister = async () => {
               </el-button>
             </el-form-item>
           </el-form>
-        </el-tab-pane>
-      </el-tabs>
+          <div class="card-switch">
+            已有账号？
+            <a @click="toggleFlip">返回登录</a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -310,10 +357,45 @@ const handleRegister = async () => {
   justify-content: center;
   align-items: center;
   background-color: var(--primary-lighter);
+  perspective: 1000px;
+
+  .flip-container {
+    width: 400px;
+    height: 480px; // 调整卡片总高度
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 1s;
+
+    &.is-rotating {
+      animation: rotateAndMorph 1s ease-in-out;
+      transform: rotate(0deg);
+    }
+
+    &.is-flipping {
+      transition: transform 0.8s;
+    }
+
+    &.is-flipped {
+      transform: rotateY(180deg);
+    }
+  }
+
+  .card-front,
+  .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+  }
 
   .login-box {
-    width: 400px;
-    padding: var(--spacing-extra-large);
+    // width: 100%;
+    // height: 100%;
+    padding: 25px var(--spacing-extra-large); // 调整上下内边距
     background-color: #fff;
     border-radius: var(--border-radius-base);
     box-shadow: var(--box-shadow-light);
@@ -322,8 +404,24 @@ const handleRegister = async () => {
       text-align: center;
       color: var(--primary-color);
       font-size: 24px;
-      margin-bottom: var(--spacing-extra-large);
+      margin-bottom: 20px; // 减少标题底部间距
       font-weight: 600;
+    }
+
+    .card-switch {
+      text-align: center;
+      margin-top: 15px; // 减少底部切换按钮的上边距
+      color: #606266;
+
+      a {
+        color: var(--primary-color);
+        cursor: pointer;
+        margin-left: 5px;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
     }
 
     // 自定义 Element Plus 组件主题色
@@ -363,6 +461,28 @@ const handleRegister = async () => {
         background-color: var(--primary-light);
         border-color: var(--primary-light);
       }
+    }
+  }
+
+  @keyframes rotateAndMorph {
+    0% {
+      transform: rotate(0deg) scale(1);
+    }
+
+    25% {
+      transform: rotate(90deg) scale(0.8) skew(15deg);
+    }
+
+    50% {
+      transform: rotate(180deg) scale(1.2) skew(-15deg);
+    }
+
+    75% {
+      transform: rotate(270deg) scale(0.9) skew(10deg);
+    }
+
+    100% {
+      transform: rotate(360deg) scale(1);
     }
   }
 }

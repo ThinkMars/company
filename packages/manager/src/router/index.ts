@@ -1,39 +1,65 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { staticRoutes } from './staticRoutes'
-import { useUserStore } from '@/store/user'
-import { usePermissionStore } from '@/store/permission'
+import { useUserStore } from '@/pinia/user'
+import type { RouteRecordRaw } from 'vue-router'
+import Layout from '@/layouts/index.vue'
+
+// 定义路由表
+export const routes: RouteRecordRaw[] = [
+  {
+    path: '/login',
+    component: () => import('@/views/login/index.vue'),
+    meta: { hidden: true },
+  },
+  {
+    path: '/',
+    component: Layout,
+    redirect: '/home',
+    children: [
+      {
+        path: 'home',
+        component: () => import('@/views/home/index.vue'),
+        meta: { title: '首页', icon: 'House' },
+      },
+      {
+        path: 'user',
+        component: () => import('@/views/user/index.vue'),
+        meta: { title: '用户管理', icon: 'User' },
+      },
+      {
+        path: 'role',
+        component: () => import('@/views/role/index.vue'),
+        meta: { title: '角色管理', icon: 'UserFilled' },
+      },
+      {
+        path: 'permission',
+        component: () => import('@/views/permission/index.vue'),
+        meta: { title: '权限管理', icon: 'Lock' },
+      },
+    ],
+  },
+]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: staticRoutes,
+  routes,
 })
 
-// 白名单路由
-const whiteList = ['/login']
-
-router.beforeEach(async (to, from, next) => {
+// 简化的路由守卫
+router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
-  const permissionStore = usePermissionStore()
+  const token = userStore.token
 
-  if (userStore.token) {
-    if (to.path === '/login') {
+  if (to.path === '/login') {
+    if (token) {
       next('/')
     } else {
-      // 判断是否已经生成过路由
-      if (permissionStore.routes.length === 0) {
-        // 生成路由
-        await permissionStore.generateRoutes()
-        // 确保路由添加完成
-        next({ ...to, replace: true })
-      } else {
-        next()
-      }
+      next()
     }
   } else {
-    if (whiteList.includes(to.path)) {
-      next()
-    } else {
+    if (!token) {
       next('/login')
+    } else {
+      next()
     }
   }
 })
