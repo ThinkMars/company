@@ -34,7 +34,7 @@ interface Conversation {
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
   assistant: {
     placement: 'start',
-    typing: { step: 5, interval: 20 },
+    // typing: { step: 5, interval: 20 },
     avatar: {
       src: 'https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp', // AI头像
       style: { backgroundColor: '#f0f0f0' },
@@ -86,73 +86,57 @@ const Home: FC = () => {
         const apiKey = sessionStorage.getItem('apiKey')
         let currentContent = ''
 
-        // 创建新的 AbortController
         abortController.current = new AbortController()
-
         setRequesting(true)
 
-        const response = await fetch(`http://localhost:3000/want-chat/stream`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
+        const response = await fetch(
+          `https://company-api.thinkmars.cn/want-chat/stream`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({ message }),
+            signal: abortController.current.signal,
           },
-          body: JSON.stringify({ message }),
-          signal: abortController.current.signal, // 添加 signal
-        })
+        )
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        // 立即显示一个空的回复
-        onUpdate('')
-
         // 创建文本解码流
-        const textStream = response.body!.pipeThrough(new TextDecoderStream())
-        const reader = textStream.getReader()
+        const reader = response.body!.getReader()
 
-        let buffer = ''
-        const processChunk = async () => {
-          try {
-            const { done, value } = await reader.read()
-            if (done) {
-              onSuccess(currentContent)
-              setRequesting(false)
-              reader.releaseLock()
-              return
-            }
+        while (true) {
+          const { done, value } = await reader.read()
 
-            buffer += value
-            const lines = buffer.split('\n')
-            buffer = lines.pop() ?? ''
+          if (done) {
+            onSuccess(currentContent)
+            setRequesting(false)
+            break
+          }
 
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6)) as { content: string }
-                  if (data.content) {
-                    currentContent += data.content
-                    onUpdate(currentContent)
-                  }
-                } catch (e) {
-                  console.warn('Failed to parse SSE data:', line, e)
+          // 将 Uint8Array 转换为字符串
+          const chunk = new TextDecoder().decode(value)
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6)) as { content: string }
+                if (data.content) {
+                  currentContent += data.content
+                  // 立即更新UI显示
+                  onUpdate(currentContent)
                 }
+              } catch (e) {
+                console.warn('Failed to parse SSE data:', line, e)
               }
             }
-
-            // 递归处理下一个数据块
-            await processChunk()
-          } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
-              reader.releaseLock()
-              return
-            }
-            throw error
           }
         }
-
-        await processChunk()
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           console.log('Request aborted')

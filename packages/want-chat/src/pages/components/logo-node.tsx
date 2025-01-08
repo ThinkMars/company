@@ -9,7 +9,7 @@ const LogoNode = () => {
         src="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
         alt="logo"
       />
-      <span>Want Chat</span>
+      <span>WantChat</span>
     </div>
   )
 }
