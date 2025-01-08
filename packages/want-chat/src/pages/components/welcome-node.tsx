@@ -9,7 +9,7 @@ const PlaceholderNode = () => {
         variant="borderless"
         icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
         title="你好，我是你的智能助手"
-        description="基于Ant Design X的视觉解决方案"
+        description="有什么可以帮助你的吗？"
       />
     </Space>
   )
