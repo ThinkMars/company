@@ -42,17 +42,5 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    build: {
-      outDir: 'dist',
-      assetsDir: 'assets',
-      // 生产环境移除 console
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-        },
-      },
-    },
   }
 })
