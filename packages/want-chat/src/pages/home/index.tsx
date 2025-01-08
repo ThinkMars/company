@@ -90,7 +90,7 @@ const Home: FC = () => {
         setRequesting(true)
 
         const response = await fetch(
-          `https://company-api.thinkmars.cn/want-chat/stream`,
+          `https://api.company.thinkmars.cn/want-chat/stream`,
           {
             method: 'POST',
             headers: {
