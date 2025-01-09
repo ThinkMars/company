@@ -86,7 +86,7 @@ const useMarkdownRenderer = () => {
         renderer.code = ({ text, lang }: { text: string; lang?: string }) => {
           const language = lang ?? ''
           const highlighted = String(highlight(text, language))
-          return `<pre><code class="language-${language}">${highlighted}</code></pre>`
+          return `<pre data-raw-code="${encodeURIComponent(text)}"><code class="language-${language}">${highlighted}</code></pre>`
         }
 
         marked.marked.use({ renderer })

@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
-    "@ant-design/x": "^1.0.2",
+    "@ant-design/x": "^1.0.4",
     "antd": "^5.22.5",
     "antd-style": "^3.7.1",
     "marked": "^15.0.6",
