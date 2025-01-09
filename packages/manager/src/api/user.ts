@@ -18,9 +18,17 @@ export interface UserForm {
   avatar?: string
 }
 
+export interface UserRoleForm {
+  userId: number
+  roles: string[]
+}
+
 // 获取用户列表
 export const getUserList = (params: UserQuery) => {
-  return request.get<UserInfo[]>('/user/list', { params })
+  return request.get<{
+    list: UserInfo[]
+    total: number
+  }>('/user/list', { params })
 }
 
 // 创建用户
@@ -36,6 +44,11 @@ export const updateUser = (data: UserForm) => {
 // 删除用户
 export const deleteUser = (id: number) => {
   return request.delete(`/user/delete/${id}`)
+}
+
+// 更新用户角色
+export const updateUserRoles = (data: UserRoleForm) => {
+  return request.put('/user/update-roles', data)
 }
 
 // 获取单个用户详情
