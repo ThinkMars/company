@@ -91,7 +91,7 @@ const Home: FC = () => {
         setRequesting(true)
 
         const response = await fetch(
-          `${process.env.NODE_ENV === 'development' ? 'http://localhost:3000/want-chat/stream' : 'https://api.company.thinkmars.cn/want-chat/stream'}`,
+          `${import.meta.env.VITE_API_BASE_URL}/want-chat/stream`,
           {
             method: 'POST',
             headers: {
