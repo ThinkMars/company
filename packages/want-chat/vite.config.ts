@@ -12,6 +12,7 @@ export default defineConfig({
           antd_style: ['antd-style'],
           react: ['react'],
           react_dom: ['react-dom'],
+          markdown: ['marked', 'prismjs'],
         },
       },
     },
