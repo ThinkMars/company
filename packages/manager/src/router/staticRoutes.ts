@@ -7,14 +7,14 @@ export const staticRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/login/index.vue'),
   },
   {
-    path: '/status/:code',
-    name: 'Status',
-    component: () => import('@/views/status/index.vue'),
+    path: '/exception/:code',
+    name: 'Exception',
+    component: () => import('@/views/exception/index.vue'),
   },
   {
     path: '/',
     name: 'Layout',
-    component: () => import('@/views/layout/index.vue'),
+    component: () => import('@/layouts/index.vue'),
     redirect: '/home',
     children: [
       {
@@ -26,10 +26,67 @@ export const staticRoutes: RouteRecordRaw[] = [
           icon: 'House',
         },
       },
+      {
+        path: '/user',
+        name: 'User',
+        component: () => import('@/views/user/index.vue'),
+        meta: {
+          title: '用户管理',
+          icon: 'User',
+        },
+      },
+      {
+        path: '/role',
+        name: 'Role',
+        component: () => import('@/views/role/index.vue'),
+        meta: {
+          title: '角色管理',
+          icon: 'Lock',
+        },
+      },
+      {
+        path: '/permission',
+        name: 'Permission',
+        component: () => import('@/views/permission/index.vue'),
+        meta: {
+          title: '权限管理',
+          icon: 'Key',
+        },
+      },
+      {
+        path: 'ops',
+        name: 'Ops',
+        redirect: '/ops/release',
+        meta: {
+          title: '运维管理',
+          icon: 'Operation',
+          role: ['admin'], // 权限控制
+        },
+        children: [
+          {
+            path: '/ops/release',
+            name: 'Release',
+            component: () => import('@/views/ops/release/index.vue'),
+            meta: {
+              title: '发布系统',
+              role: ['admin'], // 权限控制
+            },
+          },
+          {
+            path: '/ops/artifact',
+            name: 'Artifact',
+            component: () => import('@/views/ops/artifact/index.vue'),
+            meta: {
+              title: '制品管理',
+              role: ['admin'], // 权限控制
+            },
+          },
+        ],
+      },
     ],
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/status/404',
+    redirect: '/exception/404',
   },
 ]

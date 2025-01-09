@@ -11,7 +11,7 @@ export const useLayoutStore = defineStore('layout', {
     // 侧边栏字体颜色
     asideTextColor: '#fff',
     // 侧边栏选中字体颜色
-    asideActiveTextColor: '#409EFF',
+    asideActiveTextColor: '#fff',
     // 侧边栏是否固定
     asideFixed: false,
     // 顶部栏背景颜色

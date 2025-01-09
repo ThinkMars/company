@@ -7,6 +7,7 @@ export interface UserInfo {
   avatar?: string
   createTime: string
   updateTime: string
+  roles: string[]
 }
 
 export interface PageResult<T> {

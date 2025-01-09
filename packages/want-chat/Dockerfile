@@ -27,17 +27,8 @@ COPY ./nginx.conf /etc/nginx/conf.d/wanchat.company.conf
 # 从构建阶段复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 设置时区（可选）
-RUN apk add --no-cache tzdata && \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone
-
 # 暴露80端口
 EXPOSE 80
-
-# 健康检查（可选）
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
 
 # 启动nginx
 CMD ["nginx", "-g", "daemon off;"]
