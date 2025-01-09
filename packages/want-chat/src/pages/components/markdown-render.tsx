@@ -3,12 +3,7 @@ import { Button, message } from 'antd'
 import { createStyles } from 'antd-style'
 import { CopyOutlined } from '@ant-design/icons'
 
-import markdownit from 'markdown-it'
-import type MarkdownIt from 'markdown-it'
-import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css'
-
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 const useStyles = createStyles(({ token, css }) => ({
@@ -39,27 +34,109 @@ const useStyles = createStyles(({ token, css }) => ({
   `,
 }))
 
-const md: MarkdownIt = markdownit({
-  html: true,
-  linkify: true,
-  typographer: true,
-  breaks: true,
-  highlight: (str, lang) => {
-    if (lang && hljs.getLanguage(lang)) {
+type Marked = typeof import('marked')
+type Prism = typeof import('prismjs')
+
+const useMarkdownRenderer = () => {
+  const librariesRef = useRef<{
+    mdParser: Marked | null
+    prism: Prism | null
+    error: Error | null
+  }>({
+    mdParser: null,
+    prism: null,
+    error: null,
+  })
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadLibraries = async () => {
       try {
-        const highlighted = hljs.highlight(str, { language: lang }).value
-        return `<pre data-raw-code="${encodeURIComponent(str)}"><code class="hljs ${lang}">${highlighted}</code></pre>`
+        const [marked, prism] = await Promise.all([
+          import('marked'),
+          import('prismjs'),
+        ])
+
+        await Promise.all([
+          import('prismjs/components/prism-javascript'),
+          import('prismjs/components/prism-typescript'),
+          import('prismjs/components/prism-json'),
+          import('prismjs/components/prism-bash'),
+        ])
+
+        marked.marked.setOptions({
+          gfm: true,
+          breaks: true,
+        })
+
+        const highlight = (code: string, lang: string): string => {
+          if (lang && prism.languages[lang]) {
+            try {
+              return String(prism.highlight(code, prism.languages[lang], lang))
+            } catch (error) {
+              console.error('Error highlighting code:', error)
+              return code
+            }
+          }
+          return code
+        }
+
+        const renderer = new marked.marked.Renderer()
+        renderer.code = ({ text, lang }: { text: string; lang?: string }) => {
+          const language = lang ?? ''
+          const highlighted = String(highlight(text, language))
+          return `<pre><code class="language-${language}">${highlighted}</code></pre>`
+        }
+
+        marked.marked.use({ renderer })
+
+        if (isMounted) {
+          librariesRef.current = {
+            mdParser: marked,
+            prism: prism,
+            error: null,
+          }
+        }
       } catch (error) {
-        console.error(error)
+        if (isMounted) {
+          librariesRef.current.error = error as Error
+        }
       }
     }
-    return `<pre data-raw-code="${encodeURIComponent(str)}"><code>${md.utils.escapeHtml(str)}</code></pre>`
-  },
-})
+
+    void loadLibraries()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  return librariesRef
+}
 
 const MarkdownRenderer: BubbleProps['messageRender'] = (content) => {
   const { styles } = useStyles()
   const containerRef = useRef<HTMLDivElement>(null)
+  const librariesRef = useMarkdownRenderer()
+
+  const [isReady, setIsReady] = useState(false)
+
+  useEffect(() => {
+    if (librariesRef.current.mdParser && librariesRef.current.prism) {
+      setIsReady(true)
+    }
+  }, [librariesRef.current.mdParser, librariesRef.current.prism])
+
+  const renderMarkdown = (content: string) => {
+    if (!isReady) {
+      throw new Error('Markdown renderer not ready')
+    }
+    if (librariesRef.current.error) {
+      throw new Error(librariesRef.current.error.message)
+    }
+    return librariesRef.current.mdParser!.marked.parse(content)
+  }
 
   const handleCopy = async (code: string) => {
     try {
@@ -72,6 +149,12 @@ const MarkdownRenderer: BubbleProps['messageRender'] = (content) => {
   }
 
   useEffect(() => {
+    if (librariesRef.current.error) {
+      return
+    }
+    if (!librariesRef.current.mdParser || !librariesRef.current.prism) {
+      return
+    }
     if (!containerRef.current) return
 
     const container = containerRef.current
@@ -108,15 +191,26 @@ const MarkdownRenderer: BubbleProps['messageRender'] = (content) => {
     })
   }, [content, styles.codeBlock])
 
-  return (
-    <div
-      ref={containerRef}
-      className="markdown-body"
-      dangerouslySetInnerHTML={{
-        __html: md.render(content),
-      }}
-    />
-  )
+  if (!isReady) {
+    return <div>Loading markdown renderer...</div>
+  }
+
+  try {
+    return (
+      <div
+        ref={containerRef}
+        className="markdown-body"
+        dangerouslySetInnerHTML={{
+          __html: renderMarkdown(content),
+        }}
+      />
+    )
+  } catch (error) {
+    if (error instanceof Error) {
+      return <div>Error loading markdown renderer: {error.message}</div>
+    }
+    return <div>Unknown error occurred while rendering markdown</div>
+  }
 }
 
 export default MarkdownRenderer

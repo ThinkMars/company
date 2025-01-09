@@ -1,21 +1,22 @@
+import { useEffect, useState, type FC, useRef, lazy, Suspense } from 'react'
+import { Button, type GetProp, message, Modal } from 'antd'
 import {
   Bubble,
   Conversations,
-  ConversationsProps,
+  type ConversationsProps,
   Sender,
   useXAgent,
   useXChat,
 } from '@ant-design/x'
-import { useEffect, useState, type FC, useRef } from 'react'
-
 import { PlusOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Button, type GetProp, message, Modal } from 'antd'
+
+// Lazy load local components
+const PlaceholderNode = lazy(() => import('../components/welcome-node'))
+const LogoNode = lazy(() => import('../components/logo-node'))
+const UserNode = lazy(() => import('../components/user-card'))
+import markdownRender from '../components/markdown-render'
 
 import { useStyle } from '../../../hooks/use-style'
-import PlaceholderNode from '../components/welcome-node'
-import LogoNode from '../components/logo-node'
-import UserNode from '../components/user-card'
-import markdownRender from '../components/markdown-render'
 
 // 添加消息类型定义
 interface ChatMessage {
@@ -90,7 +91,7 @@ const Home: FC = () => {
         setRequesting(true)
 
         const response = await fetch(
-          `https://api.company.thinkmars.cn/want-chat/stream`,
+          `${process.env.NODE_ENV === 'development' ? 'http://localhost:3000/want-chat/stream' : 'https://api.company.thinkmars.cn/want-chat/stream'}`,
           {
             method: 'POST',
             headers: {
@@ -343,7 +344,11 @@ const Home: FC = () => {
                 ? messageItems
                 : [
                     {
-                      content: PlaceholderNode(),
+                      content: (
+                        <Suspense fallback={null}>
+                          <PlaceholderNode />
+                        </Suspense>
+                      ),
                       variant: 'borderless',
                     },
                   ]
