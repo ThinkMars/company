@@ -274,7 +274,7 @@ const Home: FC = () => {
       role: status === 'local' ? 'user' : 'assistant',
       content: message,
       // although it's not a real typing, but it's a good way to show the loading state
-      typing: { step: 2, interval: 50, suffix: <>💗</> },
+      typing: { step: 2, interval: 50 },
       messageRender: markdownRender,
     }),
   )
