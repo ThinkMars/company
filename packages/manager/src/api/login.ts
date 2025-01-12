@@ -21,10 +21,16 @@ export function login(data: any) {
   })
 }
 
-// 注册
-export function register(data: any) {
+// 修改密码
+export function changePassword(data: {
+  oldPassword: string
+  newPassword: string
+  confirmPassword: string
+  captchaId: string
+  captchaText: string
+}) {
   return request({
-    url: '/admin/register',
+    url: '/admin/change-password',
     method: 'post',
     data,
   })

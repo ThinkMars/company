@@ -22,7 +22,7 @@ const handlePipelineSelect = (pipeline: any) => {
 
 <template>
   <el-card class="pipeline-container">
-    <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+    <el-tabs v-model="activeTab" @change="handleTabChange">
       <el-tab-pane label="流水线列表" name="pipeline">
         <PipelineList @select-pipeline="handlePipelineSelect" />
       </el-tab-pane>

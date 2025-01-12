@@ -4,16 +4,16 @@ import { useRouter } from 'vue-router'
 import { User, Lock, Key } from '@element-plus/icons-vue'
 import { useUserStore } from '@/pinia/user'
 import type { FormInstance } from 'element-plus'
-import { getCaptcha, login, register } from '@/api/login'
+import { getCaptcha, login, changePassword } from '@/api/login'
 
 const router = useRouter()
 const userStore = useUserStore()
 const captchaImg = ref('') // 验证码图片base64数据
 
 const loading = ref(false)
-const registerLoading = ref(false)
+const changePasswordLoading = ref(false)
 const loginFormRef = ref<FormInstance>()
-const registerFormRef = ref<FormInstance>()
+const changePasswordFormRef = ref<FormInstance>()
 
 const isFlipped = ref(false)
 const isRotating = ref(false)
@@ -37,11 +37,6 @@ const toggleFlip = () => {
   }, 1000) // 旋转变形动画持续1秒
 }
 
-const handleRegisterSuccess = () => {
-  ElMessage.success('注册成功')
-  isFlipped.value = false
-}
-
 // 初始化时加载验证码
 const initCaptcha = () => {
   refreshCaptcha()
@@ -56,7 +51,7 @@ const refreshCaptcha = async () => {
     const base64Data = window.btoa(unescape(encodeURIComponent(svg)))
     captchaImg.value = `data:image/svg+xml;base64,${base64Data}`
     loginForm.captchaId = captchaId
-    registerForm.captchaId = captchaId
+    changePasswordForm.captchaId = captchaId
   } catch (error) {
     console.error('获取验证码失败:', error)
   }
@@ -111,28 +106,28 @@ const handleLogin = async () => {
   })
 }
 
-const registerForm = reactive({
-  username: '',
-  password: '',
+const changePasswordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
   confirmPassword: '',
   captchaId: '',
   captchaText: '',
 })
 
-const registerRules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 10, message: '长度在 3 到 10 个字符', trigger: 'blur' },
+const changePasswordRules = {
+  oldPassword: [
+    { required: true, message: '请输入原密码', trigger: 'blur' },
+    { min: 6, max: 16, message: '长度在 6 到 16 个字符', trigger: 'blur' },
   ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
     { min: 6, max: 16, message: '长度在 6 到 16 个字符', trigger: 'blur' },
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    { required: true, message: '请确认新密码', trigger: 'blur' },
     {
       validator: (rule: any, value: string, callback: Function) => {
-        if (value !== registerForm.password) {
+        if (value !== changePasswordForm.newPassword) {
           callback(new Error('两次输入密码不一致'))
         } else {
           callback()
@@ -147,23 +142,24 @@ const registerRules = {
   ],
 }
 
-const handleRegister = async () => {
-  if (!registerFormRef.value) return
-  await registerFormRef.value.validate(async (valid) => {
+const handleChangePassword = async () => {
+  if (!changePasswordFormRef.value) return
+  await changePasswordFormRef.value.validate(async (valid) => {
     if (valid) {
-      registerLoading.value = true
+      changePasswordLoading.value = true
       try {
-        // 调用注册接口
-        const res = await register(registerForm)
+        // 调用修改密码接口
+        const res = await changePassword(changePasswordForm)
         if (res) {
-          handleRegisterSuccess()
+          ElMessage.success('密码修改成功')
+          isFlipped.value = false
         }
       } catch (error) {
         console.error(error)
         // 验证码错误时刷新验证码
         refreshCaptcha()
       } finally {
-        registerLoading.value = false
+        changePasswordLoading.value = false
       }
     }
   })
@@ -248,41 +244,42 @@ const handleRegister = async () => {
             </el-form-item>
           </el-form>
           <div class="card-switch">
-            还没有账号？
-            <a @click="toggleFlip">注册</a>
+            忘记密码？
+            <a @click="toggleFlip">修改密码</a>
           </div>
         </div>
       </div>
 
-      <!-- 注册卡片面 -->
+      <!-- 修改密码卡片面 -->
       <div class="card-back">
         <div class="login-box">
-          <h2 class="title">用户注册</h2>
+          <h2 class="title">修改密码</h2>
           <el-form
-            ref="registerFormRef"
-            :model="registerForm"
-            :rules="registerRules"
+            ref="changePasswordFormRef"
+            :model="changePasswordForm"
+            :rules="changePasswordRules"
             label-width="0"
           >
-            <el-form-item prop="username">
+            <el-form-item prop="oldPassword">
               <el-input
-                v-model="registerForm.username"
-                placeholder="用户名"
-                maxlength="10"
+                v-model="changePasswordForm.oldPassword"
+                type="password"
+                placeholder="原密码"
+                maxlength="16"
               >
                 <template #prefix>
                   <el-icon>
-                    <User />
+                    <Lock />
                   </el-icon>
                 </template>
               </el-input>
             </el-form-item>
 
-            <el-form-item prop="password">
+            <el-form-item prop="newPassword">
               <el-input
-                v-model="registerForm.password"
+                v-model="changePasswordForm.newPassword"
                 type="password"
-                placeholder="密码"
+                placeholder="新密码"
                 maxlength="16"
               >
                 <template #prefix>
@@ -295,9 +292,9 @@ const handleRegister = async () => {
 
             <el-form-item prop="confirmPassword">
               <el-input
-                v-model="registerForm.confirmPassword"
+                v-model="changePasswordForm.confirmPassword"
                 type="password"
-                placeholder="确认密码"
+                placeholder="确认新密码"
                 maxlength="16"
               >
                 <template #prefix>
@@ -311,7 +308,7 @@ const handleRegister = async () => {
             <el-form-item prop="captchaText">
               <div class="captcha-container">
                 <el-input
-                  v-model="registerForm.captchaText"
+                  v-model="changePasswordForm.captchaText"
                   placeholder="验证码"
                   maxlength="6"
                 >
@@ -333,15 +330,14 @@ const handleRegister = async () => {
             <el-form-item>
               <el-button
                 type="primary"
-                :loading="registerLoading"
-                @click="handleRegister"
+                :loading="changePasswordLoading"
+                @click="handleChangePassword"
               >
-                注册
+                修改密码
               </el-button>
             </el-form-item>
           </el-form>
           <div class="card-switch">
-            已有账号？
             <a @click="toggleFlip">返回登录</a>
           </div>
         </div>
