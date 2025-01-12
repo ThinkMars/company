@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    title="创建流水线"
+    :title="isCreate ? '新建流水线' : '更新流水线'"
     v-model="visible"
     width="600px"
     :before-close="handleClose"
@@ -53,9 +53,13 @@ import type { FormRules } from 'element-plus'
 import { createJob, updateJob } from '@/api/jenkins'
 
 const props = defineProps({
-  jobId: {
-    type: String,
-    default: '',
+  isCreate: {
+    type: Boolean,
+    default: true,
+  },
+  formData: {
+    type: Object,
+    default: () => ({}),
   },
 })
 
@@ -69,6 +73,7 @@ const form = reactive({
   gitUrl: '',
   branch: '',
   subDir: '',
+  ...props.formData,
 })
 
 const rules = reactive<FormRules>({
@@ -89,10 +94,14 @@ const handleSubmit = async () => {
   try {
     await formRef.value?.validate()
 
-    if (props.jobId) {
-      await updateJob(form)
+    const { type, name, gitUrl, branch, subDir } = form
+
+    const postData = { type, name, gitUrl, branch, subDir }
+
+    if (props.isCreate) {
+      await createJob(postData)
     } else {
-      await createJob(form)
+      await updateJob(postData)
     }
 
     ElMessage.success('创建成功')

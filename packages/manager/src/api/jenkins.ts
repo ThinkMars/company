@@ -1,10 +1,17 @@
 import request from '@/axios/request'
 
 // 获取构建任务列表
-export function getJobs() {
+export function getJobs(data: {
+  pageNum: number
+  pageSize: number
+  name?: string
+  type?: string
+  status?: string
+}) {
   return request<any, any>({
     url: '/jenkins/jobs',
-    method: 'get',
+    method: 'post',
+    data,
   })
 }
 
@@ -69,5 +76,14 @@ export function getJobBuildProgress(data: { name: string }) {
     url: `/jenkins/jobBuildProgress`,
     method: 'get',
     params: data,
+  })
+}
+
+// 停止构建任务
+export function stopJob(data: { name: string }) {
+  return request<any, any>({
+    url: `/jenkins/stopJob`,
+    method: 'post',
+    data,
   })
 }
