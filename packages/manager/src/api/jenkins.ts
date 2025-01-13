@@ -38,12 +38,18 @@ export function triggerJob(data: { name: string }) {
   })
 }
 
+export const getJobBaseConfig = (data: { name: string }) => {
+  return request<any, any>({
+    url: `/jenkins/jobBaseConfig/${data.name}`,
+    method: 'get',
+  })
+}
+
 // 获取job详情
 export function getJobDetail(data: { name: string }) {
   return request<any, any>({
-    url: `/jenkins/jobs`,
+    url: `/jenkins/jobs/${data.name}`,
     method: 'get',
-    params: data,
   })
 }
 
@@ -71,12 +77,14 @@ export function deleteJob(data: { name: string }) {
 }
 
 // 获取构建进度
-export function getJobBuildProgress(data: { name: string }) {
-  return request<any, any>({
-    url: `/jenkins/jobBuildProgress`,
-    method: 'get',
-    params: data,
-  })
+export function getJobSteamsBuildLog(data: { name: string }) {
+  return fetch(
+    `${import.meta.env.VITE_API_URL}/jenkins/jobSteamsBuildLog/${data.name}`,
+  )
+  // return request<any, any>({
+  //   url: `/jenkins/jobSteamsBuildLog/${data.name}`,
+  //   method: 'get',
+  // })
 }
 
 // 停止构建任务
@@ -85,5 +93,13 @@ export function stopJob(data: { name: string }) {
     url: `/jenkins/stopJob`,
     method: 'post',
     data,
+  })
+}
+
+// 获取构建日志
+export function getJobBuildLog(data: { name: string }) {
+  return request<any, any>({
+    url: `/jenkins/jobBuildLog/${data.name}`,
+    method: 'get',
   })
 }

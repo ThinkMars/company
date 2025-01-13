@@ -2,12 +2,13 @@
 import { ref, onMounted } from 'vue'
 import { deleteJob, getJobs, stopJob, triggerJob } from '@/api/jenkins'
 import PipelineCreateDialog from './PipelineCreateDialog.vue'
+import { useRouter } from 'vue-router'
 
 interface Pipeline {
   id: number
   name: string
   branch: string
-  lastBuildStatus: 'notbuilt' | 'running' | 'success' | 'failed' | 'pending'
+  buildStatus: 'SUCCESS' | 'FAILURE' | 'RUNNING' | 'UNKNOWN'
   creator: string
   createdAt: string
   type?: string // 添加类型字段
@@ -56,48 +57,18 @@ const fetchPipelineList = async () => {
   }
 }
 
-const getStatusType = (status: string) => {
-  const map: Record<string, string> = {
-    notbuilt: 'info',
-    running: 'primary',
-    success: 'success',
-    failed: 'danger',
-    pending: 'warning',
+const getStatusType = (
+  status: string,
+): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  const map: Record<
+    string,
+    'success' | 'warning' | 'danger' | 'info' | 'primary'
+  > = {
+    SUCCESS: 'success',
+    FAILURE: 'danger',
+    RUNNING: 'warning',
   }
   return map[status] || 'info'
-}
-
-// const jobStatus = ref('')
-
-const getStatusText = (status: string) => {
-  const map: Record<string, string> = {
-    notbuilt: '未构建',
-    running: '运行中',
-    success: '成功',
-    failed: '失败',
-    pending: '等待中',
-  }
-  return map[status] || '未知'
-}
-
-const handleTrigger = async (row: Pipeline) => {
-  try {
-    ElMessage.success('触发成功')
-    row.lastBuildStatus = 'running'
-
-    await triggerJob({ name: row.name })
-    await fetchPipelineList()
-  } catch (error) {
-    ElMessage.error('触发失败')
-    await fetchPipelineList()
-  }
-}
-
-const handleCancelBuild = async (row: Pipeline) => {
-  await stopJob({ name: row.name })
-  await fetchPipelineList()
-
-  ElMessage.success('取消构建成功')
 }
 
 const handleDelete = async (row: Pipeline) => {
@@ -113,10 +84,9 @@ const handleDelete = async (row: Pipeline) => {
   }
 }
 
-const emit = defineEmits(['selectPipeline'])
-
+const router = useRouter()
 const handleDetail = (row: Pipeline) => {
-  emit('selectPipeline', row)
+  router.push(`/ops/release/detail/${row.name}`)
 }
 
 onMounted(() => {
@@ -185,10 +155,10 @@ onMounted(() => {
     </el-table-column>
     <el-table-column prop="branch" label="分支" width="80" />
     <el-table-column prop="subDir" label="子目录" width="150" />
-    <el-table-column prop="lastBuildStatus" label="状态" width="100">
+    <el-table-column prop="buildStatus" label="状态" width="100">
       <template #default="{ row }">
-        <el-tag :type="getStatusType(row.lastBuildStatus)">
-          {{ getStatusText(row.lastBuildStatus) }}
+        <el-tag :type="getStatusType(row.buildStatus)">
+          {{ row.buildStatus }}
         </el-tag>
       </template>
     </el-table-column>
@@ -199,41 +169,12 @@ onMounted(() => {
         <el-button type="primary" size="small" @click="handleDetail(row)"
           >详情</el-button
         >
-        <el-button
-          type="success"
-          style="margin-right: 16px"
-          v-if="row.lastBuildStatus !== 'running'"
-          size="small"
-          @click="handleTrigger(row)"
-          >触发</el-button
+        <el-button type="primary" size="small" @click="handleUpdate(row)"
+          >更新</el-button
         >
-        <el-button
-          type="success"
-          style="margin-right: 16px"
-          v-else
-          size="small"
-          @click="handleCancelBuild(row)"
-          >取消</el-button
+        <el-button type="danger" size="small" @click="handleDelete(row)"
+          >删除</el-button
         >
-        <el-dropdown>
-          <el-button size="small" type="primary">
-            更多<el-icon class="el-icon--right"><arrow-down /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item @click="handleUpdate(row)">
-                <el-icon>
-                  <edit /> </el-icon
-                >更新
-              </el-dropdown-item>
-              <el-dropdown-item @click="handleDelete(row)">
-                <el-icon>
-                  <delete /> </el-icon
-                >删除
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
       </template>
     </el-table-column>
   </el-table>
@@ -246,7 +187,6 @@ onMounted(() => {
       layout="total, sizes, prev, pager, next, jumper"
     />
   </div>
-
   <PipelineCreateDialog
     v-if="showCreateDialog"
     :is-create="isCreate"

@@ -12,7 +12,7 @@ interface MenuItem extends Omit<RouteRecordRaw, 'children'> {
   meta?: {
     title?: string
     icon?: string
-    hidden?: boolean
+    isMenu?: boolean
   }
   children?: MenuItem[]
 }
@@ -24,6 +24,17 @@ const menuItems = computed<MenuItem[]>(() => {
   const rootRoute = routes.find((route: MenuItem) => route.path === '/')
   return (rootRoute?.children as MenuItem[]) || []
 })
+
+// 过滤掉不需要显示的菜单项
+const filterMenuItems = (menuItems: MenuItem[]): MenuItem[] => {
+  return menuItems.filter((item) => {
+    if (item.children && item.children.length > 0) {
+      item.children = filterMenuItems(item.children)
+    }
+    return item.meta?.isMenu
+  })
+}
+const filteredMenuItems = filterMenuItems(menuItems.value)
 
 const { isCollapse, asideBgColor, asideTextColor, asideActiveTextColor } =
   storeToRefs(useLayoutStore())
@@ -41,7 +52,7 @@ const { isCollapse, asideBgColor, asideTextColor, asideActiveTextColor } =
     :text-color="asideTextColor"
     :active-text-color="asideActiveTextColor"
   >
-    <template v-for="item in menuItems" :key="item.path">
+    <template v-for="item in filteredMenuItems" :key="item.path">
       <template v-if="item.children && item.children.length > 0">
         <el-sub-menu :index="item.path">
           <template #title>
@@ -55,11 +66,11 @@ const { isCollapse, asideBgColor, asideTextColor, asideActiveTextColor } =
             :key="child.path"
             :index="child.path"
           >
-            <span v-if="!child.meta?.hidden">{{ child.meta?.title }}</span>
+            <span>{{ child.meta?.title }}</span>
           </el-menu-item>
         </el-sub-menu>
       </template>
-      <el-menu-item v-else :index="item.path" v-if="!item.meta?.hidden">
+      <el-menu-item v-else :index="item.path">
         <el-icon>
           <component :is="item.meta?.icon" />
         </el-icon>
