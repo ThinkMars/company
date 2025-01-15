@@ -24,6 +24,7 @@ export const staticRoutes: RouteRecordRaw[] = [
         meta: {
           title: '首页',
           icon: 'House',
+          isMenu: true,
         },
       },
       {
@@ -33,6 +34,7 @@ export const staticRoutes: RouteRecordRaw[] = [
         meta: {
           title: '用户管理',
           icon: 'User',
+          isMenu: true,
         },
       },
       {
@@ -42,6 +44,7 @@ export const staticRoutes: RouteRecordRaw[] = [
         meta: {
           title: '角色管理',
           icon: 'Lock',
+          isMenu: true,
         },
       },
       {
@@ -51,6 +54,7 @@ export const staticRoutes: RouteRecordRaw[] = [
         meta: {
           title: '权限管理',
           icon: 'Key',
+          isMenu: true,
         },
       },
       {
@@ -61,6 +65,7 @@ export const staticRoutes: RouteRecordRaw[] = [
           title: '运维管理',
           icon: 'Operation',
           role: ['admin'], // 权限控制
+          isMenu: true,
         },
         children: [
           {
@@ -69,6 +74,17 @@ export const staticRoutes: RouteRecordRaw[] = [
             component: () => import('@/views/ops/release/index.vue'),
             meta: {
               title: '发布系统',
+              role: ['admin'], // 权限控制
+              isMenu: true,
+            },
+          },
+          {
+            path: '/ops/release/detail/:name',
+            name: 'ReleaseDetail',
+            component: () =>
+              import('@/views/ops/release/detail/ReleaseDetail.vue'),
+            meta: {
+              title: '发布详情',
               role: ['admin'], // 权限控制
             },
           },
@@ -79,6 +95,7 @@ export const staticRoutes: RouteRecordRaw[] = [
             meta: {
               title: '制品管理',
               role: ['admin'], // 权限控制
+              isMenu: true,
             },
           },
         ],

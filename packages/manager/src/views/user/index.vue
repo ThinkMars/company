@@ -2,8 +2,14 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import UserForm from './components/UserForm.vue'
-// import RoleForm from '../role/components/RoleForm.vue' // 移除角色表单导入
-import { getUserList, createUser, updateUser, deleteUser } from '@/api/user'
+import RoleForm from '../role/components/RoleForm.vue'
+import {
+  getUserList,
+  createUser,
+  updateUser,
+  deleteUser,
+  updateUserRoles,
+} from '@/api/user'
 
 interface User {
   id: number
@@ -24,7 +30,7 @@ const queryParams = ref({
 const showUserForm = ref(false)
 const isCreate = ref(false)
 const currentUser = ref<Partial<User>>({})
-// 移除 const showRoleForm = ref(false)
+const showRoleForm = ref(false)
 
 const fetchUserList = async () => {
   try {
@@ -116,7 +122,10 @@ const handleDelete = async (row: User) => {
   }
 }
 
-// 移除 handleRole 函数
+const handleRole = (row: User) => {
+  currentUser.value = { ...row }
+  showRoleForm.value = true
+}
 
 const handleUserSubmit = async (form: any) => {
   try {
@@ -134,7 +143,16 @@ const handleUserSubmit = async (form: any) => {
   }
 }
 
-// 移除 handleRoleSubmit 函数
+const handleRoleSubmit = async (form: any) => {
+  try {
+    await updateUserRoles(form)
+    ElMessage.success('角色更新成功')
+    showRoleForm.value = false
+    fetchUserList()
+  } catch (error) {
+    console.error(error)
+  }
+}
 
 const handlePageChange = () => {
   fetchUserList()
@@ -167,6 +185,7 @@ onMounted(() => {
 
     <el-table :data="userList" v-loading="loading">
       <el-table-column prop="username" label="用户名" />
+      <el-table-column prop="createTime" label="创建时间" width="180" />
       <el-table-column prop="roles" label="角色">
         <template #default="{ row }">
           <el-tag v-for="role in row.roles" :key="role" class="role-tag">{{
@@ -174,7 +193,6 @@ onMounted(() => {
           }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180" />
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
           <el-button type="primary" size="small" @click="handleEdit(row)"
@@ -183,7 +201,9 @@ onMounted(() => {
           <el-button type="danger" size="small" @click="handleDelete(row)"
             >删除</el-button
           >
-          <!-- 移除角色管理按钮 -->
+          <el-button type="warning" size="small" @click="handleRole(row)"
+            >角色管理</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -205,7 +225,11 @@ onMounted(() => {
     :form-data="currentUser"
     @submit="handleUserSubmit"
   />
-  <!-- 移除 RoleForm 组件 -->
+  <RoleForm
+    v-model="showRoleForm"
+    :form-data="currentUser"
+    @submit="handleRoleSubmit"
+  />
 </template>
 
 <style scoped>
