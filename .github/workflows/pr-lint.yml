@@ -9,29 +9,13 @@ on:
   workflow_dispatch:
 
 jobs:
+  setup:
+    uses: ./.github/workflows/shared-steps.yml
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install PNPM
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-      - name: Cache dependencies
-        uses: actions/cache@v3 # 缓存依赖以加速后续构建
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }} # 缓存键
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - name: Install Dependencies
-        run: pnpm install
+
       - name: Build
         run: pnpm build # 构建指定应用
       - name: Lint
