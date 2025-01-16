@@ -153,18 +153,16 @@ jobs:
     runs-on: ubuntu-latest
     # 无论成功失败都执行
     if: always()
+
     steps:
       - name: Notify
-        uses: webfactory/notify-action@v1.1.0 # 发送通知
-        with:
-          script: |
-            if [ "${{ job.status }}" == "success" ]; then
-              echo "部署成功！"
-            else
-              echo "部署失败！"
-            fi
-        env:
-          DEPLOYMENT_STATUS: ${{ job.status }} # 传递部署状态
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "部署成功！"
+          else
+            echo "部署失败！"
+          fi
+
   #     # 邮件通知
   #     - name: Email Notification
   #       if: always()
