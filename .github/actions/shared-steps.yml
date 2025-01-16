@@ -1,0 +1,31 @@
+# .github/workflows/shared-steps.yml
+name: Shared Steps
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+
+    - name: Install PNPM
+      uses: pnpm/action-setup@v2
+      with:
+        version: 9
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      id: cache-dependencies
+      with:
+        path: |
+          **/node_modules
+          ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: Install Dependencies
+      run: pnpm install

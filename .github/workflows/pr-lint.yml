@@ -9,12 +9,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup:
-    uses: ./.github/workflows/shared-steps.yml
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/shared-steps.yml
 
       - name: Build
         run: pnpm build # 构建指定应用
