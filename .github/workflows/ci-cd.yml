@@ -1,7 +1,7 @@
 # CI/CD 流水线配置
 name: CI/CD Pipeline
 
-# 本工作流用于自动化构建、测试和部署 want-chat 和 manager 两个应用
+# 本工作流用于自动化构建、测试和部署应用
 # 包含以下主要阶段：
 # 1. 环境准备 (setup)
 # 2. 应用构建 (build)
@@ -10,7 +10,7 @@ name: CI/CD Pipeline
 # 5. 通知 (notify)
 
 # 触发条件：
-# - 当 main 分支有推送或 PR
+# - 当 main 分支有推送
 # - 且更改涉及 packages 目录或工作流配置时
 on:
   push:
@@ -67,7 +67,7 @@ jobs:
           fi
 
           # 将变更的package列表转换为JSON格式
-          json_packages=$(printf '%s\n' "${changed_packages[@]}" | jq -R . | jq -s .)
+          json_packages=$(printf '%s\n' "${changed_packages[@]}" | jq -R . | jq -s -c .)
           echo "changed-packages=$json_packages" >> $GITHUB_OUTPUT
 
   # 环境准备阶段
