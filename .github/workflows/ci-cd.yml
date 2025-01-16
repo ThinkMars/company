@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "22"
 
       # 安装 PNPM
       - name: Install PNPM
@@ -108,10 +108,10 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
+          server_address: smtp.126.com # 126 邮箱的 SMTP 服务器地址
+          server_port: 465 # 126 邮箱的 SMTP 端口（SSL）
+          username: ${{ secrets.EMAIL_USERNAME }} # 126 邮箱地址
+          password: ${{ secrets.EMAIL_PASSWORD }} # 126 邮箱的授权码
           subject: "CI/CD Notification: ${{ github.repository }} (${{ needs.build.result }})"
           to: thinkmars@126.com
           from: GitHub Actions
