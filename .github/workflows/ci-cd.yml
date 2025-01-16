@@ -31,52 +31,12 @@ on:
         default: all
 
 jobs:
-  # 检测变更阶段
-  detect-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      changed-packages: ${{ steps.detect.outputs.changed-packages }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get changed packages
-        id: detect
-        run: |
-          # 如果是手动触发，使用用户选择的包
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            if [[ "${{ github.event.inputs.package }}" == "all" ]]; then
-              changed_packages=("want-chat" "manager")
-            else
-              changed_packages=("${{ github.event.inputs.package }}")
-            fi
-          else
-            # 自动触发时检测变更
-            # 检查是否是首次提交
-            if git rev-list --count HEAD > /dev/null 2>&1 && [ $(git rev-list --count HEAD) -gt 1 ]; then
-              changed_files=$(git diff --name-only HEAD^ HEAD)
-            else
-              # 首次提交时列出所有文件
-              changed_files=$(git ls-tree -r HEAD --name-only)
-            fi
-            
-            changed_packages=()
-            for pkg in want-chat manager; do
-              if echo "$changed_files" | grep -q "^packages/$pkg/"; then
-                changed_packages+=("$pkg")
-              fi
-            done
-          fi
-
-          # 将变更的package列表转换为JSON格式
-          json_packages=$(printf '%s\n' "${changed_packages[@]}" | jq -R . | jq -s -c .)
-          echo "changed-packages=$json_packages" >> $GITHUB_OUTPUT
-
   # 环境准备阶段
   build:
     runs-on: ubuntu-latest
-    needs: detect-changes
     strategy:
       matrix:
-        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
+        app: ["want-chat", "manager"]
     steps:
       - uses: actions/checkout@v4 # 检出代码
 
@@ -119,11 +79,11 @@ jobs:
 
   # Docker 镜像构建阶段
   docker:
-    needs: [build, detect-changes]
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
+        app: ["want-chat", "manager"]
 
     steps:
       - uses: actions/checkout@v4
@@ -157,12 +117,12 @@ jobs:
 
   # 部署阶段
   deploy:
-    needs: [docker, detect-changes]
+    needs: docker
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
-        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
+        app: ["want-chat", "manager"]
     steps:
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.0 # 使用 SSH 连接到服务器
@@ -184,12 +144,12 @@ jobs:
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
   # 通知阶段
   notify:
-    needs: [deploy, detect-changes]
+    needs: deploy
     runs-on: ubuntu-latest
     if: success() || failure()
     strategy:
       matrix:
-        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
+        app: ["want-chat", "manager"]
     steps:
       - name: Notify
         run: |
