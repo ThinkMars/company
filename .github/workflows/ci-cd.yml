@@ -1,0 +1,123 @@
+# CI/CD 流水线配置
+name: CI/CD Pipeline
+
+# 触发条件：当 main 分支有推送或 PR，且更改涉及 packages 目录或工作流配置时
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/**"
+      - ".github/workflows/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 使用 matrix 策略并行构建多个项目
+    # matrix 会为 [want-chat, manager] 分别创建独立的并行作业
+    # 优点：并行执行提高效率，减少总体构建时间
+    strategy:
+      matrix:
+        app: [want-chat, manager]
+
+    steps:
+      # 检出代码
+      - uses: actions/checkout@v4
+
+      # 设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      # 安装 PNPM
+      - name: Install PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      # 缓存依赖以加快构建速度
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # 安装项目依赖
+      - name: Install Dependencies
+        run: pnpm install
+
+      # 构建指定的项目
+      - name: Build
+        run: pnpm --filter ${{ matrix.app }} build
+
+      # 构建 Docker 镜像
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ matrix.app }}:${{ github.sha }} -f packages/${{ matrix.app }}/Dockerfile .
+
+      # 登录到 Docker 仓库（仅在 main 分支）
+      - name: Login to Docker Registry
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 推送 Docker 镜像（仅在 main 分支）
+      - name: Push Docker Image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker tag ${{ matrix.app }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
+
+      # 部署到阿里云服务器（仅在 main 分支）
+      - name: Deploy
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          # 阿里云服务器公网 IP
+          host: ${{ secrets.ALIYUN_HOST }}
+          # 登录用户名，通常是 root 或其他自定义用户
+          username: ${{ secrets.ALIYUN_USER }}
+          # SSH 私钥，需要在服务器添加对应的公钥到 authorized_keys
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          # 服务器上的部署路径
+          script: |
+            cd /docker/
+            docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
+            docker-compose up -d --force-recreate ${{ matrix.app }}
+
+  # 构建完成后发送通知
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      # 邮件通知
+      - name: Email Notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "CI/CD Notification: ${{ github.repository }} (${{ needs.build.result }})"
+          to: thinkmars@126.com
+          from: GitHub Actions
+          body: |
+            🚦 Status: ${{ needs.build.result }}
+            📦 Repo: ${{ github.repository }}
+            🌿 Branch: ${{ github.ref_name }}
+            💬 Message: ${{ github.event.head_commit.message }}
+            🔗 Detail: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
