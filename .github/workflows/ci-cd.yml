@@ -139,10 +139,14 @@ jobs:
               echo "docker-compose.yml 不存在！"
               exit 1
             fi
-            echo "拉取 ${{ matrix.app }} 镜像..."
+            echo "停止并删除 ${{ matrix.app }} 容器..."
+            docker-compose stop ${{ matrix.app }} && docker-compose rm -f ${{ matrix.app }}
+            echo "删除旧的 ${{ matrix.app }} 镜像..."
+            docker rmi -f ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
+            echo "拉取最新的 ${{ matrix.app }} 镜像...
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
-            echo "强制重新创建容器启动 ${{ matrix.app }} 服务..."
-            docker-compose up -d --force-recreate ${{ matrix.app }}
+            echo "创建容器启动 ${{ matrix.app }} 服务..."
+            docker-compose up -d --no-deps ${{ matrix.app }}
 
   # 通知阶段
   notify:
