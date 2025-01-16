@@ -15,32 +15,18 @@ on:
       - ".github/workflows/**"
 
 jobs:
-  build:
+  setup:
     runs-on: ubuntu-latest
-    # 使用 matrix 策略并行构建多个项目
-    # matrix 会为 [want-chat, manager] 分别创建独立的并行作业
-    # 优点：并行执行提高效率，减少总体构建时间
-    strategy:
-      matrix:
-        app: [want-chat, manager]
-
     steps:
-      # 检出代码
       - uses: actions/checkout@v4
-
-      # 设置 Node.js 环境
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      # 安装 PNPM
       - name: Install PNPM
         uses: pnpm/action-setup@v2
         with:
-          version: 8
-
-      # 缓存依赖以加快构建速度
+          version: 9
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -50,21 +36,42 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
-
-      # 安装项目依赖
       - name: Install Dependencies
         run: pnpm install
+    outputs:
+      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }}
 
-      # 构建指定的项目
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [want-chat, manager]
+    steps:
       - name: Build
         run: pnpm --filter ${{ matrix.app }} build
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-dist
+          path: packages/${{ matrix.app }}/dist
+          retention-days: 1
 
-      # 构建 Docker 镜像
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [want-chat, manager]
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.app }}-dist
+          path: packages/${{ matrix.app }}/dist
       - name: Build Docker Image
         run: |
           docker build -t ${{ matrix.app }}:${{ github.sha }} -f packages/${{ matrix.app }}/Dockerfile .
-
-      # 登录到 Docker 仓库（仅在 main 分支）
       - name: Login to Docker Registry
         if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
@@ -72,26 +79,26 @@ jobs:
           registry: ${{ secrets.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # 推送 Docker 镜像（仅在 main 分支）
       - name: Push Docker Image
         if: github.ref == 'refs/heads/main'
         run: |
           docker tag ${{ matrix.app }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
           docker push ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
 
-      # 部署到阿里云服务器（仅在 main 分支）
+  deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        app: [want-chat, manager]
+    steps:
       - name: Deploy
-        if: github.ref == 'refs/heads/main'
         uses: appleboy/ssh-action@v1.0.0
         with:
-          # 阿里云服务器公网 IP
           host: ${{ secrets.ALIYUN_HOST }}
-          # 登录用户名，通常是 root 或其他自定义用户
           username: ${{ secrets.ALIYUN_USER }}
-          # SSH 私钥，需要在服务器添加对应的公钥到 authorized_keys
           key: ${{ secrets.ALIYUN_SSH_KEY }}
-          # 服务器上的部署路径
           script: |
             cd /docker/
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
