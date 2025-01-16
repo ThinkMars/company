@@ -36,7 +36,6 @@ jobs:
             ${{ runner.os }}-pnpm-
 
       - name: Build
-        if: contains(${{ steps.changed-files.outputs.files }}, 'packages/manager/')
         run: pnpm --filter manager build
 
       - name: Upload Artifact
