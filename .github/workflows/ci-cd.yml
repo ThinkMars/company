@@ -81,6 +81,7 @@ jobs:
   docker:
     needs: build
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         app: ["want-chat", "manager"]
@@ -100,8 +101,6 @@ jobs:
           docker build -t ${{ matrix.app }}:${{ github.sha }} .
 
       - name: Login to Docker Registry
-        # 仅在 main 分支执行
-        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3 # 登录 Docker 仓库
         with:
           registry: ${{ secrets.DOCKER_REGISTRY }} # 从 secrets 获取仓库地址
@@ -109,8 +108,6 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }} # 从 secrets 获取密码
 
       - name: Push Docker Image
-        # 仅在 main 分支执行
-        if: github.ref == 'refs/heads/main'
         run: |
           docker tag ${{ matrix.app }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
           docker push ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
