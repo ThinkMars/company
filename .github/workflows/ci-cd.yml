@@ -18,11 +18,7 @@ on:
     paths:
       - "packages/**"
       - ".github/workflows/**"
-  pull_request:
-    branches: [main]
-    paths:
-      - "packages/**"
-      - ".github/workflows/**"
+  workflow_dispatch:
 
 jobs:
   # 环境准备阶段
@@ -40,6 +36,7 @@ jobs:
           version: 9 # 指定 PNPM 版本
       - name: Cache dependencies
         uses: actions/cache@v3 # 缓存依赖以加速后续构建
+        id: cache-dependencies
         with:
           path: |
             **/node_modules
@@ -85,7 +82,7 @@ jobs:
         with:
           name: ${{ matrix.app }}-dist # 产物名称
           path: packages/${{ matrix.app }}/dist # 产物路径
-          retention-days: 1 # 产物保留时间
+          retention-days: 7 # 产物保留时间
 
   # Docker 镜像构建阶段
   docker:
@@ -153,14 +150,19 @@ jobs:
     runs-on: ubuntu-latest
     # 无论成功失败都执行
     if: always()
-
+    strategy:
+      matrix:
+        app: [want-chat, manager] # 并行部署两个应用
     steps:
       - name: Notify
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            echo "部署成功！"
+            echo "✅ 部署成功！"
+            echo "应用: ${{ matrix.app }}"
+            echo "镜像: ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest"
           else
-            echo "部署失败！"
+            echo "❌ 部署失败！"
+            echo "应用: ${{ matrix.app }}"
           fi
 
   #     # 邮件通知
