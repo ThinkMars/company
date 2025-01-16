@@ -14,13 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get changed files
-        id: changed-files
-        run: |
-          changed_files=$(git diff --name-only HEAD^ HEAD -- packages/manager/)
-          echo "Changed files: $changed_files"
-          echo "::set-output name=files::$changed_files"
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
