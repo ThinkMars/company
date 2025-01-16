@@ -115,37 +115,45 @@ jobs:
         app: [want-chat, manager]
     steps:
       - name: Deploy
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.3.0
         with:
           host: ${{ secrets.ALIYUN_HOST }}
           username: ${{ secrets.ALIYUN_USER }}
           key: ${{ secrets.ALIYUN_SSH_KEY }}
           script: |
+            set -e  # 如果任何命令失败，立即退出
+            echo "切换到 /docker/ 目录..."
             cd /docker/
+            if [ ! -f docker-compose.yml ]; then
+              echo "docker-compose.yml 不存在！"
+              exit 1
+            fi
+            echo "拉取 ${{ matrix.app }} 镜像..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
+            echo "启动 ${{ matrix.app }} 服务..."
             docker-compose up -d --force-recreate ${{ matrix.app }}
 
-  # 构建完成后发送通知
-  notify:
-    needs: build
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      # 邮件通知
-      - name: Email Notification
-        if: always()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.126.com # 126 邮箱的 SMTP 服务器地址
-          server_port: 465 # 126 邮箱的 SMTP 端口（SSL）
-          username: ${{ secrets.EMAIL_USERNAME }} # 126 邮箱地址
-          password: ${{ secrets.EMAIL_PASSWORD }} # 126 邮箱的授权码
-          subject: "CI/CD Notification: ${{ github.repository }} (${{ needs.build.result }})"
-          to: thinkmars@126.com
-          from: GitHub Actions
-          body: |
-            🚦 Status: ${{ needs.build.result }}
-            📦 Repo: ${{ github.repository }}
-            🌿 Branch: ${{ github.ref_name }}
-            💬 Message: ${{ github.event.head_commit.message }}
-            🔗 Detail: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  # 部署完成后发送通知（GitHub会自动通知仓库持有者）
+  # notify:
+  #   needs: deploy
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   steps:
+  #     # 邮件通知
+  #     - name: Email Notification
+  #       if: always()
+  #       uses: dawidd6/action-send-mail@v3
+  #       with:
+  #         server_address: smtp.126.com # 126 邮箱的 SMTP 服务器地址
+  #         server_port: 465 # 126 邮箱的 SMTP 端口（SSL）
+  #         username: ${{ secrets.EMAIL_USERNAME }} # 126 邮箱地址
+  #         password: ${{ secrets.EMAIL_PASSWORD }} # 126 邮箱的授权码
+  #         subject: "CI/CD Notification: ${{ github.repository }} (${{ needs.build.result }})"
+  #         to: ${{ secrets.RECIPIENT_EMAIL }}
+  #         from: GitHub Actions
+  #         body: |
+  #           🚦 Status: ${{ needs.build.result }}
+  #           📦 Repo: ${{ github.repository }}
+  #           🌿 Branch: ${{ github.ref_name }}
+  #           💬 Message: ${{ github.event.head_commit.message }}
+  #           🔗 Detail: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
