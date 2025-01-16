@@ -129,7 +129,7 @@ const changePasswordRules = {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
       validator: (rule: any, value: string, callback: Function) => {
         if (value !== changePasswordForm.newPassword) {
-          callback(new Error('两次输入密码不一致'))
+          callback(new Error('两次输入密码不一致!!!'))
         } else {
           callback()
         }

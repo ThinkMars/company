@@ -1,24 +1,25 @@
-# CI/CD 流水线配置
-name: CI/CD Pipeline
+# .github/workflows/want-chat-ci.yml
+name: Want Chat CI/CD
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/want-chat/**"
   workflow_dispatch:
-    inputs:
-      package:
-        description: "select package to build"
-        required: true
-        type: choice
-        options:
-          - want-chat
-          - manager
-          - all
-        default: all
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          changed_files=$(git diff --name-only HEAD^ HEAD -- packages/want-chat/)
+          echo "Changed files: $changed_files"
+          echo "::set-output name=files::$changed_files"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,27 +42,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
-      - name: Install Dependencies
-        run: pnpm install
-
       - name: Build
-        run: |
-          if [ "${{ inputs.package }}" == "all" ]; then
-            pnpm --filter "want-chat" build
-            pnpm --filter "manager" build
-          else
-            pnpm --filter ${{ inputs.package }} build
-          fi
+        if: contains(${{ steps.changed-files.outputs.files }}, 'packages/want-chat/')
+        run: pnpm --filter want-chat build
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.package }}-dist
-          path: packages/${{ inputs.package }}/dist
+          name: want-chat-dist
+          path: packages/want-chat/dist
           retention-days: 7
-
-    outputs:
-      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }}
 
   docker:
     needs: build
@@ -72,15 +62,16 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.package }}-dist
-          path: packages/${{ inputs.package }}/dist
+          name: want-chat-dist
+          path: packages/want-chat/dist
 
       - name: Build Docker Image
-        working-directory: packages/${{ inputs.package }}
+        working-directory: packages/want-chat
         run: |
-          docker build -t ${{ inputs.package }}:${{ github.sha }} .
+          docker build -t want-chat:${{ github.sha }} .
 
       - name: Login to Docker Registry
+        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.DOCKER_REGISTRY }}
@@ -88,13 +79,15 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker Image
+        if: github.ref == 'refs/heads/main'
         run: |
-          docker tag ${{ inputs.package }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
-          docker push ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+          docker tag want-chat:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
 
   deploy:
     needs: docker
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.0
@@ -105,12 +98,17 @@ jobs:
           script: |
             cd /docker/
             if [ ! -f docker-compose.yml ]; then
-              echo "docker-compose.yml not found"
+              echo "docker-compose.yml 不存在！"
               exit 1
             fi
-            docker-compose stop ${{ inputs.package }} && docker-compose rm -f ${{ inputs.package }}
+            echo "停止并删除 want-chat 容器..."
+            docker-compose stop want-chat && docker-compose rm -f want-chat
+            echo "删除未使用的镜像..."
             docker image prune -a -f
-            docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+            echo "拉取最新的 want-chat 镜像..."
+            docker pull ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
+            echo "创建容器启动 want-chat 服务..."
+            docker-compose up -d --no-deps want-chat
 
   notify:
     needs: deploy
@@ -120,10 +118,10 @@ jobs:
       - name: Notify
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deploy Success!"
-            echo "Package: ${{ inputs.package }}"
-            echo "Docker Image: ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest"
+            echo "✅ 部署成功！"
+            echo "应用: want-chat"
+            echo "镜像: ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest"
           else
-            echo "❌ Deploy Failed!"
-            echo "Package: ${{ inputs.package }}"
+            echo "❌ 部署失败！"
+            echo "应用: want-chat"
           fi
