@@ -25,6 +25,27 @@ jobs:
           echo "Changed files: $changed_files"
           echo "::set-output name=files::$changed_files"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        id: cache-dependencies
+        with:
+          path: |
+            **/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
       - name: Build
         if: contains(${{ steps.changed-files.outputs.files }}, 'packages/manager/')
         run: pnpm --filter manager build
