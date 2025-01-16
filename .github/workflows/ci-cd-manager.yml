@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "packages/manager/**"
+      - ".github/workflows/ci-cd-manager.yml"
   workflow_dispatch:
 
 jobs:
@@ -34,6 +35,8 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
+      - name: Install Dependencies
+        run: pnpm install
 
       - name: Build
         run: pnpm --filter manager build
@@ -96,11 +99,11 @@ jobs:
             echo "停止并删除 manager 容器..."
             docker-compose stop manager && docker-compose rm -f manager
             echo "删除未使用的镜像..."
-            docker image prune -a -f
+            docker rmi -f ${{ secrets.DOCKER_REGISTRY }}/manager:latest
             echo "拉取最新的 manager 镜像..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/manager:latest
             echo "创建容器启动 manager 服务..."
-            docker-compose up -d --no-deps manager
+            docker-compose up -d
 
   notify:
     needs: deploy

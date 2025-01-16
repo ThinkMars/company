@@ -75,10 +75,14 @@ jobs:
           name: ${{ inputs.package }}-dist
           path: packages/${{ inputs.package }}/dist
 
-      - name: Build Docker Image
-        working-directory: packages/${{ inputs.package }}
+      - name: Build Docker Images
         run: |
-          docker build -t ${{ inputs.package }}:${{ github.sha }} .
+          if [ "${{ inputs.package }}" == "all" ]; then
+            docker build -t want-chat:${{ github.sha }} packages/want-chat
+            docker build -t manager:${{ github.sha }} packages/manager
+          else
+            docker build -t ${{ inputs.package }}:${{ github.sha }} packages/${{ inputs.package }}
+          fi
 
       - name: Login to Docker Registry
         uses: docker/login-action@v3
@@ -87,10 +91,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Push Docker Image
+      - name: Push Docker Images
         run: |
-          docker tag ${{ inputs.package }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
-          docker push ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+          if [ "${{ inputs.package }}" == "all" ]; then
+            docker tag want-chat:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
+            docker tag manager:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/manager:latest
+            docker push ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
+            docker push ${{ secrets.DOCKER_REGISTRY }}/manager:latest
+          else
+            docker tag ${{ inputs.package }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+            docker push ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+          fi
 
   deploy:
     needs: docker
@@ -108,9 +119,19 @@ jobs:
               echo "docker-compose.yml not found"
               exit 1
             fi
-            docker-compose stop ${{ inputs.package }} && docker-compose rm -f ${{ inputs.package }}
-            docker image prune -a -f
-            docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+            if [ "${{ inputs.package }}" == "all" ]; then
+              docker-compose stop want-chat manager && docker-compose rm -f want-chat manager
+              docker rmi -f ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest ${{ secrets.DOCKER_REGISTRY }}/manager:latest
+              
+              docker pull ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
+              docker pull ${{ secrets.DOCKER_REGISTRY }}/manager:latest
+            else
+              docker-compose stop ${{ inputs.package }} && docker-compose rm -f ${{ inputs.package }}
+              docker rmi -f ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+              docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+            fi
+
+            docker-compose up -d
 
   notify:
     needs: deploy
@@ -122,7 +143,13 @@ jobs:
           if [ "${{ job.status }}" == "success" ]; then
             echo "✅ Deploy Success!"
             echo "Package: ${{ inputs.package }}"
-            echo "Docker Image: ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest"
+            if [ "${{ inputs.package }}" == "all" ]; then
+              echo "Docker Images:"
+              echo "- ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest"
+              echo "- ${{ secrets.DOCKER_REGISTRY }}/manager:latest"
+            else
+              echo "Docker Image: ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest"
+            fi
           else
             echo "❌ Deploy Failed!"
             echo "Package: ${{ inputs.package }}"
