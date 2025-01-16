@@ -1,7 +1,17 @@
 # CI/CD 流水线配置
 name: CI/CD Pipeline
 
-# 触发条件：当 main 分支有推送或 PR，且更改涉及 packages 目录或工作流配置时
+# 本工作流用于自动化构建、测试和部署 want-chat 和 manager 两个应用
+# 包含以下主要阶段：
+# 1. 环境准备 (setup)
+# 2. 应用构建 (build)
+# 3. Docker 镜像构建 (docker)
+# 4. 部署到生产环境 (deploy)
+# 5. 通知 (notify)
+
+# 触发条件：
+# - 当 dev 分支有推送或 PR
+# - 且更改涉及 packages 目录或工作流配置时
 on:
   push:
     branches: [dev]
@@ -15,51 +25,52 @@ on:
       - ".github/workflows/**"
 
 jobs:
+  # 环境准备阶段
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # 使用最新版 Ubuntu 作为运行环境
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # 检出代码
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4 # 设置 Node.js 环境
         with:
-          node-version: "22"
+          node-version: "22" # 指定 Node.js 版本
       - name: Install PNPM
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v2 # 安装 PNPM 包管理器
         with:
-          version: 9
+          version: 9 # 指定 PNPM 版本
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v3 # 缓存依赖以加速后续构建
         with:
           path: |
             **/node_modules
             ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }} # 缓存键
           restore-keys: |
             ${{ runner.os }}-pnpm-
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install # 安装项目依赖
     outputs:
-      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }}
+      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }} # 输出缓存命中状态
 
+  # 应用构建阶段
   build:
-    needs: setup
+    needs: setup # 依赖 setup 阶段
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [want-chat, manager]
+        app: [want-chat, manager] # 并行构建两个应用
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      # Add PNPM setup step
       - name: Install PNPM
         uses: pnpm/action-setup@v2
         with:
           version: 9
       - name: Restore dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v3 # 恢复缓存依赖
         with:
           path: |
             **/node_modules
@@ -68,24 +79,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
       - name: Build
-        run: pnpm --filter ${{ matrix.app }} build
+        run: pnpm --filter ${{ matrix.app }} build # 构建指定应用
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4 # 上传构建产物
         with:
-          name: ${{ matrix.app }}-dist
-          path: packages/${{ matrix.app }}/dist
-          retention-days: 1
+          name: ${{ matrix.app }}-dist # 产物名称
+          path: packages/${{ matrix.app }}/dist # 产物路径
+          retention-days: 1 # 产物保留时间
 
+  # Docker 镜像构建阶段
   docker:
-    needs: build
+    needs: build # 依赖 build 阶段
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [want-chat, manager]
+        app: [want-chat, manager] # 并行构建两个应用的 Docker 镜像
     steps:
-      - uses: actions/checkout@v4 # 添加 checkout 步骤
+      - uses: actions/checkout@v4
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4 # 下载构建产物
         with:
           name: ${{ matrix.app }}-dist
           path: packages/${{ matrix.app }}/dist
@@ -94,35 +106,37 @@ jobs:
         run: |
           docker build -t ${{ matrix.app }}:${{ github.sha }} .
       - name: Login to Docker Registry
+        # 仅在 dev 分支执行
         if: github.ref == 'refs/heads/dev'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3 # 登录 Docker 仓库
         with:
-          registry: ${{ secrets.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ${{ secrets.DOCKER_REGISTRY }} # 从 secrets 获取仓库地址
+          username: ${{ secrets.DOCKER_USERNAME }} # 从 secrets 获取用户名
+          password: ${{ secrets.DOCKER_PASSWORD }} # 从 secrets 获取密码
       - name: Push Docker Image
+        # 仅在 dev 分支执行
         if: github.ref == 'refs/heads/dev'
         run: |
           docker tag ${{ matrix.app }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
           docker push ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
 
+  # 部署阶段
   deploy:
-    needs: docker
+    needs: docker # 依赖 docker 阶段
     runs-on: ubuntu-latest
+    # 仅在 dev 分支执行
     if: github.ref == 'refs/heads/dev'
     strategy:
       matrix:
-        app: [want-chat, manager]
+        app: [want-chat, manager] # 并行部署两个应用
     steps:
       - name: Deploy
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.0.0 # 使用 SSH 连接到服务器
         with:
-          host: ${{ secrets.ALIYUN_HOST }}
-          username: ${{ secrets.ALIYUN_USER }}
-          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          host: ${{ secrets.ALIYUN_HOST }} # 阿里云主机地址
+          username: ${{ secrets.ALIYUN_USER }} # 阿里云用户名
+          key: ${{ secrets.ALIYUN_SSH_KEY }} # SSH 私钥
           script: |
-            set -e  # 如果任何命令失败，立即退出
-            echo "切换到 /docker/ 目录..."
             cd /docker/
             if [ ! -f docker-compose.yml ]; then
               echo "docker-compose.yml 不存在！"
@@ -130,15 +144,27 @@ jobs:
             fi
             echo "拉取 ${{ matrix.app }} 镜像..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
-            echo "启动 ${{ matrix.app }} 服务..."
+            echo "强制重新创建容器启动 ${{ matrix.app }} 服务..."
             docker-compose up -d --force-recreate ${{ matrix.app }}
 
-  # 部署完成后发送通知（GitHub会自动通知仓库持有者）
-  # notify:
-  #   needs: deploy
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   steps:
+  # 通知阶段
+  notify:
+    needs: deploy # 依赖 deploy 阶段
+    runs-on: ubuntu-latest
+    # 无论成功失败都执行
+    if: always()
+    steps:
+      - name: Notify
+        uses: webfactory/notify-action@v1.1.0 # 发送通知
+        with:
+          script: |
+            if [ "${{ job.status }}" == "success" ]; then
+              echo "部署成功！"
+            else
+              echo "部署失败！"
+            fi
+        env:
+          DEPLOYMENT_STATUS: ${{ job.status }} # 传递部署状态
   #     # 邮件通知
   #     - name: Email Notification
   #       if: always()
