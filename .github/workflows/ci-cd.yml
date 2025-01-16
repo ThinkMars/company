@@ -1,27 +1,11 @@
 # CI/CD 流水线配置
 name: CI/CD Pipeline
 
-# 本工作流用于自动化构建、测试和部署应用
-# 包含以下主要阶段：
-# 1. 环境准备 (setup)
-# 2. 应用构建 (build)
-# 3. Docker 镜像构建 (docker)
-# 4. 部署到生产环境 (deploy)
-# 5. 通知 (notify)
-
-# 触发条件：
-# - 当 main 分支有推送
-# - 且更改涉及 packages 目录或工作流配置时
 on:
-  push:
-    branches: [dev]
-    paths:
-      - "packages/**"
-      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       package:
-        description: "选择要构建的包"
+        description: "select package to build"
         required: true
         type: choice
         options:
@@ -31,130 +15,115 @@ on:
         default: all
 
 jobs:
-  # 环境准备阶段
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: ["want-chat", "manager"]
     steps:
-      - uses: actions/checkout@v4 # 检出代码
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4 # 设置 Node.js 环境
+        uses: actions/setup-node@v4
         with:
-          node-version: "22" # 指定 Node.js 版本
+          node-version: "22"
 
       - name: Install PNPM
-        uses: pnpm/action-setup@v2 # 安装 PNPM 包管理器
+        uses: pnpm/action-setup@v2
         with:
-          version: 9 # 指定 PNPM 版本
+          version: 9
 
       - name: Cache dependencies
-        uses: actions/cache@v3 # 缓存依赖以加速后续构建
+        uses: actions/cache@v3
         id: cache-dependencies
         with:
           path: |
             **/node_modules
             ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }} # 缓存键
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
       - name: Install Dependencies
-        run: pnpm install # 安装项目依赖
+        run: pnpm install
 
       - name: Build
-        run: pnpm --filter ${{ matrix.app }} build # 构建指定应用
+        run: |
+          if [ "${{ inputs.package }}" == "all" ]; then
+            pnpm --filter "want-chat" build
+            pnpm --filter "manager" build
+          else
+            pnpm --filter ${{ inputs.package }} build
+          fi
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4 # 上传构建产物
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-dist # 产物名称
-          path: packages/${{ matrix.app }}/dist # 产物路径
-          retention-days: 7 # 产物保留时间
+          name: ${{ inputs.package }}-dist
+          path: packages/${{ inputs.package }}/dist
+          retention-days: 7
 
     outputs:
-      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }} # 输出缓存命中状态
+      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }}
 
-  # Docker 镜像构建阶段
   docker:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        app: ["want-chat", "manager"]
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Download Artifact
-        uses: actions/download-artifact@v4 # 下载构建产物
+        uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.app }}-dist
-          path: packages/${{ matrix.app }}/dist
+          name: ${{ inputs.package }}-dist
+          path: packages/${{ inputs.package }}/dist
 
       - name: Build Docker Image
-        working-directory: packages/${{ matrix.app }} # 设置工作目录
+        working-directory: packages/${{ inputs.package }}
         run: |
-          docker build -t ${{ matrix.app }}:${{ github.sha }} .
+          docker build -t ${{ inputs.package }}:${{ github.sha }} .
 
       - name: Login to Docker Registry
-        uses: docker/login-action@v3 # 登录 Docker 仓库
+        uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.DOCKER_REGISTRY }} # 从 secrets 获取仓库地址
-          username: ${{ secrets.DOCKER_USERNAME }} # 从 secrets 获取用户名
-          password: ${{ secrets.DOCKER_PASSWORD }} # 从 secrets 获取密码
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker Image
         run: |
-          docker tag ${{ matrix.app }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
-          docker push ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
+          docker tag ${{ inputs.package }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
 
-  # 部署阶段
   deploy:
     needs: docker
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        app: ["want-chat", "manager"]
     steps:
       - name: Deploy
-        uses: appleboy/ssh-action@v1.0.0 # 使用 SSH 连接到服务器
+        uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.ALIYUN_HOST }} # 阿里云主机地址
-          username: ${{ secrets.ALIYUN_USER }} # 阿里云用户名
-          key: ${{ secrets.ALIYUN_SSH_KEY }} # SSH 私钥
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
           script: |
             cd /docker/
             if [ ! -f docker-compose.yml ]; then
-              echo "docker-compose.yml 不存在！"
+              echo "docker-compose.yml not found"
               exit 1
             fi
-            echo "停止并删除 ${{ matrix.app }} 容器..."
-            docker-compose stop ${{ matrix.app }} && docker-compose rm -f ${{ matrix.app }}
-            echo "删除未使用的镜像..."
+            docker-compose stop ${{ inputs.package }} && docker-compose rm -f ${{ inputs.package }}
             docker image prune -a -f
-            echo "拉取最新的 ${{ matrix.app }} 镜像..."
-            docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
-  # 通知阶段
+            docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest
+
   notify:
     needs: deploy
     runs-on: ubuntu-latest
     if: success() || failure()
-    strategy:
-      matrix:
-        app: ["want-chat", "manager"]
     steps:
       - name: Notify
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ 部署成功！"
-            echo "应用: ${{ matrix.app }}"
-            echo "镜像: ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest"
+            echo "✅ Deploy Success!"
+            echo "Package: ${{ inputs.package }}"
+            echo "Docker Image: ${{ secrets.DOCKER_REGISTRY }}/${{ inputs.package }}:latest"
           else
-            echo "❌ 部署失败！"
-            echo "应用: ${{ matrix.app }}"
+            echo "❌ Deploy Failed!"
+            echo "Package: ${{ inputs.package }}"
           fi

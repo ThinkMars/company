@@ -1,0 +1,110 @@
+# .github/workflows/manager-ci.yml
+name: Manager CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/manager/**"
+  workflow_dispatch:
+
+jobs:
+  setup:
+    uses: ./.github/workflows/shared-steps.yml
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          changed_files=$(git diff --name-only HEAD^ HEAD -- packages/manager/)
+          echo "Changed files: $changed_files"
+          echo "::set-output name=files::$changed_files"
+
+      - name: Build
+        if: contains(${{ steps.changed-files.outputs.files }}, 'packages/manager/')
+        run: pnpm --filter manager build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-dist
+          path: packages/manager/dist
+          retention-days: 7
+
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: manager-dist
+          path: packages/manager/dist
+
+      - name: Build Docker Image
+        working-directory: packages/manager
+        run: |
+          docker build -t manager:${{ github.sha }} .
+
+      - name: Login to Docker Registry
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push Docker Image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker tag manager:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/manager:latest
+          docker push ${{ secrets.DOCKER_REGISTRY }}/manager:latest
+
+  deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          script: |
+            cd /docker/
+            if [ ! -f docker-compose.yml ]; then
+              echo "docker-compose.yml 不存在！"
+              exit 1
+            fi
+            echo "停止并删除 manager 容器..."
+            docker-compose stop manager && docker-compose rm -f manager
+            echo "删除未使用的镜像..."
+            docker image prune -a -f
+            echo "拉取最新的 manager 镜像..."
+            docker pull ${{ secrets.DOCKER_REGISTRY }}/manager:latest
+            echo "创建容器启动 manager 服务..."
+            docker-compose up -d --no-deps manager
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    steps:
+      - name: Notify
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ 部署成功！"
+            echo "应用: manager"
+            echo "镜像: ${{ secrets.DOCKER_REGISTRY }}/manager:latest"
+          else
+            echo "❌ 部署失败！"
+            echo "应用: manager"
+          fi
