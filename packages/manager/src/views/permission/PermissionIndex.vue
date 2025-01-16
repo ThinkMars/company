@@ -101,7 +101,7 @@ const handleEdit = (row: Permission) => {
 }
 
 // 删除权限
-const handleDelete = async (id: number) => {
+const handleDelete = async () => {
   try {
     await ElMessageBox.confirm('确认删除该权限吗？', '提示', {
       type: 'warning',
@@ -176,7 +176,7 @@ getList()
           <el-button type="primary" size="small" @click="handleEdit(row)"
             >编辑</el-button
           >
-          <el-button type="danger" size="small" @click="handleDelete(row.id)"
+          <el-button type="danger" size="small" @click="handleDelete"
             >删除</el-button
           >
         </template>
