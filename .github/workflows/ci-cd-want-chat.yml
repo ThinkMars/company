@@ -36,7 +36,6 @@ jobs:
             ${{ runner.os }}-pnpm-
 
       - name: Build
-        if: contains(${{ steps.changed-files.outputs.files }}, 'packages/want-chat/')
         run: pnpm --filter want-chat build
 
       - name: Upload Artifact
