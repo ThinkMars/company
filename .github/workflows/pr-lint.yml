@@ -1,0 +1,30 @@
+name: "pr-lint"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [want-chat, manager] # 并行构建两个应用
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Build
+        run: pnpm --filter ${{ matrix.app }} build # 构建指定应用

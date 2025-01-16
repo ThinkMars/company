@@ -84,6 +84,7 @@ const handleEdit = (row: Role) => {
 }
 
 const handleDelete = async (row: Role) => {
+  console.log('row: ', row)
   try {
     await ElMessageBox.confirm('确认删除该角色吗？', '提示', {
       type: 'warning',
@@ -103,6 +104,8 @@ const handlePermission = (row: Role) => {
 }
 
 const handleRoleSubmit = async (form: any) => {
+  console.log('form: ', form)
+
   try {
     if (isCreate.value) {
       // await createRole(form)

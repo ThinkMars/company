@@ -8,7 +8,8 @@
     "postinstall": "simple-git-hooks",
     "client": "pnpm --filter @company/playground run dev",
     "build": "pnpm -r --filter='./packages/*' run build",
-    "test": "vitest"
+    "test": "vitest",
+    "lint": "pnpm -r --filter='./packages/*' run lint"
   },
   "repository": {
     "type": "git",
@@ -30,7 +31,7 @@
     "prettier": "^3.3.3",
     "simple-git-hooks": "^2.11.1",
     "tslib": "^2.7.0",
-    "typescript-eslint": "^8.7.0",
+    "typescript-eslint": "^8.20.0",
     "vitest": "^2.1.1"
   },
   "simple-git-hooks": {

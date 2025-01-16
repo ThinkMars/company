@@ -3,13 +3,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import UserForm from './components/UserForm.vue'
 import RoleForm from '../role/components/RoleForm.vue'
-import {
-  getUserList,
-  createUser,
-  updateUser,
-  deleteUser,
-  updateUserRoles,
-} from '@/api/user'
+import { createUser, updateUser, deleteUser, updateUserRoles } from '@/api/user'
 
 interface User {
   id: number
