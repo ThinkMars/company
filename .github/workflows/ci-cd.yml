@@ -50,7 +50,14 @@ jobs:
             fi
           else
             # 自动触发时检测变更
-            changed_files=$(git diff --name-only HEAD^ HEAD)
+            # 检查是否是首次提交
+            if git rev-list --count HEAD > /dev/null 2>&1 && [ $(git rev-list --count HEAD) -gt 1 ]; then
+              changed_files=$(git diff --name-only HEAD^ HEAD)
+            else
+              # 首次提交时列出所有文件
+              changed_files=$(git ls-tree -r HEAD --name-only)
+            fi
+            
             changed_packages=()
             for pkg in want-chat manager; do
               if echo "$changed_files" | grep -q "^packages/$pkg/"; then
