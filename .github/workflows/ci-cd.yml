@@ -4,12 +4,12 @@ name: CI/CD Pipeline
 # 触发条件：当 main 分支有推送或 PR，且更改涉及 packages 目录或工作流配置时
 on:
   push:
-    branches: [main]
+    branches: [dev]
     paths:
       - "packages/**"
       - ".github/workflows/**"
   pull_request:
-    branches: [main]
+    branches: [dev]
     paths:
       - "packages/**"
       - ".github/workflows/**"
@@ -48,6 +48,25 @@ jobs:
       matrix:
         app: [want-chat, manager]
     steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # Add PNPM setup step
+      - name: Install PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - name: Restore dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
       - name: Build
         run: pnpm --filter ${{ matrix.app }} build
       - name: Upload Artifact
