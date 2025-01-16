@@ -143,7 +143,7 @@ jobs:
             docker-compose stop ${{ matrix.app }} && docker-compose rm -f ${{ matrix.app }}
             echo "删除旧的 ${{ matrix.app }} 镜像..."
             docker rmi -f ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
-            echo "拉取最新的 ${{ matrix.app }} 镜像...
+            echo "拉取最新的 ${{ matrix.app }} 镜像..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
             echo "创建容器启动 ${{ matrix.app }} 服务..."
             docker-compose up -d --no-deps ${{ matrix.app }}
@@ -152,8 +152,7 @@ jobs:
   notify:
     needs: deploy # 依赖 deploy 阶段
     runs-on: ubuntu-latest
-    # 无论成功失败都执行
-    if: always()
+    if: success() || failure()
     strategy:
       matrix:
         app: [want-chat, manager] # 并行部署两个应用
