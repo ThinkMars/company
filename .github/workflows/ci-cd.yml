@@ -10,16 +10,16 @@ name: CI/CD Pipeline
 # 5. 通知 (notify)
 
 # 触发条件：
-# - 当 dev 分支有推送或 PR
+# - 当 main 分支有推送或 PR
 # - 且更改涉及 packages 目录或工作流配置时
 on:
   push:
-    branches: [dev]
+    branches: [main]
     paths:
       - "packages/**"
       - ".github/workflows/**"
   pull_request:
-    branches: [dev]
+    branches: [main]
     paths:
       - "packages/**"
       - ".github/workflows/**"
@@ -106,16 +106,16 @@ jobs:
         run: |
           docker build -t ${{ matrix.app }}:${{ github.sha }} .
       - name: Login to Docker Registry
-        # 仅在 dev 分支执行
-        if: github.ref == 'refs/heads/dev'
+        # 仅在 main 分支执行
+        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3 # 登录 Docker 仓库
         with:
           registry: ${{ secrets.DOCKER_REGISTRY }} # 从 secrets 获取仓库地址
           username: ${{ secrets.DOCKER_USERNAME }} # 从 secrets 获取用户名
           password: ${{ secrets.DOCKER_PASSWORD }} # 从 secrets 获取密码
       - name: Push Docker Image
-        # 仅在 dev 分支执行
-        if: github.ref == 'refs/heads/dev'
+        # 仅在 main 分支执行
+        if: github.ref == 'refs/heads/main'
         run: |
           docker tag ${{ matrix.app }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
           docker push ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
@@ -124,8 +124,8 @@ jobs:
   deploy:
     needs: docker # 依赖 docker 阶段
     runs-on: ubuntu-latest
-    # 仅在 dev 分支执行
-    if: github.ref == 'refs/heads/dev'
+    # 仅在 main 分支执行
+    if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
         app: [want-chat, manager] # 并行部署两个应用
