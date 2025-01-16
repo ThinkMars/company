@@ -144,8 +144,6 @@ jobs:
             fi
             echo "拉取 ${{ matrix.app }} 镜像..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
-            echo "停止并删除旧的 ${{ matrix.app }} 容器..."
-            docker-compose up -d --remove-orphans
             echo "强制重新创建容器启动 ${{ matrix.app }} 服务..."
             docker-compose up -d --force-recreate ${{ matrix.app }}
 
