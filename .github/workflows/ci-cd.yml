@@ -14,26 +14,75 @@ name: CI/CD Pipeline
 # - 且更改涉及 packages 目录或工作流配置时
 on:
   push:
-    branches: [main]
+    branches: [dev]
     paths:
       - "packages/**"
       - ".github/workflows/**"
   workflow_dispatch:
+    inputs:
+      package:
+        description: "选择要构建的包"
+        required: true
+        type: choice
+        options:
+          - want-chat
+          - manager
+          - all
+        default: all
 
 jobs:
+  # 检测变更阶段
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed-packages: ${{ steps.detect.outputs.changed-packages }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get changed packages
+        id: detect
+        run: |
+          # 如果是手动触发，使用用户选择的包
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ github.event.inputs.package }}" == "all" ]]; then
+              changed_packages=("want-chat" "manager")
+            else
+              changed_packages=("${{ github.event.inputs.package }}")
+            fi
+          else
+            # 自动触发时检测变更
+            changed_files=$(git diff --name-only HEAD^ HEAD)
+            changed_packages=()
+            for pkg in want-chat manager; do
+              if echo "$changed_files" | grep -q "^packages/$pkg/"; then
+                changed_packages+=("$pkg")
+              fi
+            done
+          fi
+
+          # 将变更的package列表转换为JSON格式
+          json_packages=$(printf '%s\n' "${changed_packages[@]}" | jq -R . | jq -s .)
+          echo "changed-packages=$json_packages" >> $GITHUB_OUTPUT
+
   # 环境准备阶段
-  setup:
-    runs-on: ubuntu-latest # 使用最新版 Ubuntu 作为运行环境
+  build:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
     steps:
       - uses: actions/checkout@v4 # 检出代码
+
       - name: Setup Node.js
         uses: actions/setup-node@v4 # 设置 Node.js 环境
         with:
           node-version: "22" # 指定 Node.js 版本
+
       - name: Install PNPM
         uses: pnpm/action-setup@v2 # 安装 PNPM 包管理器
         with:
           version: 9 # 指定 PNPM 版本
+
       - name: Cache dependencies
         uses: actions/cache@v3 # 缓存依赖以加速后续构建
         id: cache-dependencies
@@ -44,39 +93,13 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }} # 缓存键
           restore-keys: |
             ${{ runner.os }}-pnpm-
+
       - name: Install Dependencies
         run: pnpm install # 安装项目依赖
-    outputs:
-      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }} # 输出缓存命中状态
 
-  # 应用构建阶段
-  build:
-    needs: setup # 依赖 setup 阶段
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: [want-chat, manager] # 并行构建两个应用
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install PNPM
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-      - name: Restore dependencies
-        uses: actions/cache@v3 # 恢复缓存依赖
-        with:
-          path: |
-            **/node_modules
-            ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
       - name: Build
         run: pnpm --filter ${{ matrix.app }} build # 构建指定应用
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4 # 上传构建产物
         with:
@@ -84,24 +107,31 @@ jobs:
           path: packages/${{ matrix.app }}/dist # 产物路径
           retention-days: 7 # 产物保留时间
 
+    outputs:
+      cache-hit: ${{ steps.cache-dependencies.outputs.cache-hit }} # 输出缓存命中状态
+
   # Docker 镜像构建阶段
   docker:
-    needs: build # 依赖 build 阶段
+    needs: [build, detect-changes]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [want-chat, manager] # 并行构建两个应用的 Docker 镜像
+        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Download Artifact
         uses: actions/download-artifact@v4 # 下载构建产物
         with:
           name: ${{ matrix.app }}-dist
           path: packages/${{ matrix.app }}/dist
+
       - name: Build Docker Image
         working-directory: packages/${{ matrix.app }} # 设置工作目录
         run: |
           docker build -t ${{ matrix.app }}:${{ github.sha }} .
+
       - name: Login to Docker Registry
         # 仅在 main 分支执行
         if: github.ref == 'refs/heads/main'
@@ -110,6 +140,7 @@ jobs:
           registry: ${{ secrets.DOCKER_REGISTRY }} # 从 secrets 获取仓库地址
           username: ${{ secrets.DOCKER_USERNAME }} # 从 secrets 获取用户名
           password: ${{ secrets.DOCKER_PASSWORD }} # 从 secrets 获取密码
+
       - name: Push Docker Image
         # 仅在 main 分支执行
         if: github.ref == 'refs/heads/main'
@@ -119,13 +150,12 @@ jobs:
 
   # 部署阶段
   deploy:
-    needs: docker # 依赖 docker 阶段
+    needs: [docker, detect-changes]
     runs-on: ubuntu-latest
-    # 仅在 main 分支执行
     if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
-        app: [want-chat, manager] # 并行部署两个应用
+        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
     steps:
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.0 # 使用 SSH 连接到服务器
@@ -145,17 +175,14 @@ jobs:
             docker image prune -a -f
             echo "拉取最新的 ${{ matrix.app }} 镜像..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/${{ matrix.app }}:latest
-            echo "创建容器启动 ${{ matrix.app }} 服务..."
-            docker-compose up -d --no-deps ${{ matrix.app }}
-
   # 通知阶段
   notify:
-    needs: deploy # 依赖 deploy 阶段
+    needs: [deploy, detect-changes]
     runs-on: ubuntu-latest
     if: success() || failure()
     strategy:
       matrix:
-        app: [want-chat, manager] # 并行部署两个应用
+        app: ${{ fromJson(needs.detect-changes.outputs.changed-packages) }}
     steps:
       - name: Notify
         run: |
@@ -167,22 +194,3 @@ jobs:
             echo "❌ 部署失败！"
             echo "应用: ${{ matrix.app }}"
           fi
-
-  #     # 邮件通知
-  #     - name: Email Notification
-  #       if: always()
-  #       uses: dawidd6/action-send-mail@v3
-  #       with:
-  #         server_address: smtp.126.com # 126 邮箱的 SMTP 服务器地址
-  #         server_port: 465 # 126 邮箱的 SMTP 端口（SSL）
-  #         username: ${{ secrets.EMAIL_USERNAME }} # 126 邮箱地址
-  #         password: ${{ secrets.EMAIL_PASSWORD }} # 126 邮箱的授权码
-  #         subject: "CI/CD Notification: ${{ github.repository }} (${{ needs.build.result }})"
-  #         to: ${{ secrets.RECIPIENT_EMAIL }}
-  #         from: GitHub Actions
-  #         body: |
-  #           🚦 Status: ${{ needs.build.result }}
-  #           📦 Repo: ${{ github.repository }}
-  #           🌿 Branch: ${{ github.ref_name }}
-  #           💬 Message: ${{ github.event.head_commit.message }}
-  #           🔗 Detail: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
