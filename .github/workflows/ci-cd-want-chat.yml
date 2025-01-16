@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "packages/want-chat/**"
+      - ".github/workflows/ci-cd-want-chat.yml"
   workflow_dispatch:
 
 jobs:
@@ -34,6 +35,9 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
+
+      - name: Install Dependencies
+        run: pnpm install
 
       - name: Build
         run: pnpm --filter want-chat build
@@ -96,11 +100,11 @@ jobs:
             echo "停止并删除 want-chat 容器..."
             docker-compose stop want-chat && docker-compose rm -f want-chat
             echo "删除未使用的镜像..."
-            docker image prune -a -f
+            docker rmi -f ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
             echo "拉取最新的 want-chat 镜像..."
             docker pull ${{ secrets.DOCKER_REGISTRY }}/want-chat:latest
             echo "创建容器启动 want-chat 服务..."
-            docker-compose up -d --no-deps want-chat
+            docker-compose up -d
 
   notify:
     needs: deploy
