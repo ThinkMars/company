@@ -1,5 +1,5 @@
 # .github/workflows/manager-ci.yml
-name: Manager CI/CD
+name: CI/CD Manager Project
 
 on:
   push:
