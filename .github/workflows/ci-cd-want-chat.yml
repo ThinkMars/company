@@ -1,5 +1,5 @@
 # .github/workflows/want-chat-ci.yml
-name: Want Chat CI/CD
+name: CI/CD WantChat Project
 
 on:
   push:

@@ -1,4 +1,4 @@
-name: "PR-Lint"
+name: "CI PR-Lint"
 
 on:
   pull_request:
