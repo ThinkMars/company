@@ -126,7 +126,7 @@ const MarkdownRenderer: BubbleProps['messageRender'] = (content) => {
     if (librariesRef.current.mdParser && librariesRef.current.prism) {
       setIsReady(true)
     }
-  }, [librariesRef])
+  }, [librariesRef.current.mdParser, librariesRef.current.prism])
 
   const renderMarkdown = (content: string) => {
     if (!isReady) {
