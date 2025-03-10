@@ -1,26 +1,29 @@
 {
   "name": "@company/playground",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@company/free-theme-ball": "workspace:^",
-    "@company/web-metrics": "workspace:^",
-    "@element-plus/icons-vue": "^2.3.1",
-    "axios": "^1.7.7",
-    "element-plus": "^2.9.1",
-    "vue": "^3.4.37",
-    "vue-router": "^4.4.5"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.1.2",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.1",
-    "vue-tsc": "^2.0.29"
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react-swc": "^3.8.0",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.2.0"
   }
 }
