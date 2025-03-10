@@ -12,6 +12,6 @@ export const requestInterceptor = (config: InternalAxiosRequestConfig) => {
   return config
 }
 
-export const requestErrorInterceptor = (error: any) => {
+export const requestErrorInterceptor = (error: Error) => {
   return Promise.reject(error)
 }

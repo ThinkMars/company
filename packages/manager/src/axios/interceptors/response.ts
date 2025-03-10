@@ -1,10 +1,11 @@
-import type { AxiosResponse } from 'axios'
+import type { AxiosResponse, AxiosError } from 'axios'
 import { message } from 'antd'
 
 // 响应成功拦截器
-export const responseInterceptor = (response: AxiosResponse) => {
-  const { data } = response
-  return data
+export const responseInterceptor = (
+  response: AxiosResponse<unknown, unknown>,
+) => {
+  return response
   // // TODO: 处理业务状态码
   // if (data.code === 20000) {
   //   return data
@@ -15,7 +16,7 @@ export const responseInterceptor = (response: AxiosResponse) => {
 }
 
 // 响应错误拦截器
-export const responseErrorInterceptor = (error: any) => {
+export const responseErrorInterceptor = (error: AxiosError) => {
   console.log(error)
   const { response } = error
 
