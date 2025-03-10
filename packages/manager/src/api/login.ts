@@ -1,20 +1,26 @@
 import request from '@/axios/request'
-import type {
-  CaptchaResponse,
-  LoginResponse,
-} from './interface/login.interface'
+// import type {
+//   LoginParams,
+//   CaptchaResponse,
+//   LoginResponse,
+// } from './interface/login.interface'
 
 // 获取验证码
 export function getCaptcha() {
-  return request<any, CaptchaResponse>({
+  return request({
     url: '/admin/captcha',
     method: 'get',
   })
 }
 
 // 登录
-export function login(data: any) {
-  return request<any, LoginResponse>({
+export function login(data: {
+  username: string
+  password: string
+  captchaId: string
+  captchaText: string
+}) {
+  return request({
     url: '/admin/login',
     method: 'post',
     data,

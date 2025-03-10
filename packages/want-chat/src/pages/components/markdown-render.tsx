@@ -126,7 +126,7 @@ const MarkdownRenderer: BubbleProps['messageRender'] = (content) => {
     if (librariesRef.current.mdParser && librariesRef.current.prism) {
       setIsReady(true)
     }
-  }, [librariesRef.current.mdParser, librariesRef.current.prism])
+  }, [librariesRef, librariesRef.current.mdParser, librariesRef.current.prism])
 
   const renderMarkdown = (content: string) => {
     if (!isReady) {
@@ -189,7 +189,7 @@ const MarkdownRenderer: BubbleProps['messageRender'] = (content) => {
 
       wrapper.appendChild(buttonDomNode)
     })
-  }, [content, styles.codeBlock])
+  }, [librariesRef, content, styles.codeBlock])
 
   if (!isReady) {
     return <div>Loading markdown renderer...</div>
